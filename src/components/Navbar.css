@@ -23,9 +23,31 @@
     justify-content: space-between;
     align-items: center;
     padding: 1rem 2rem;
-    background-color: #ffffff0f;
+    background-color: #1e616e0f;
     color: #fff;
     position: sticky;
     top: 0;
     z-index: 1000;
+    border-radius: 2rem;
+    border: 1px solid #11353c37;
 }
+.navbar-item{
+    list-style: none;
+}
+.navbar-link{
+    text-decoration: none;
+    color: #fff;
+}
+.navbar-link:hover{
+    background-color: #1c505b5c;
+}
+.navbar-btn{
+    background-color: #1c515b60;
+    color: #fff;
+    border: none;
+    width: 80px;
+    height: 40px;
+    border-radius: 2rem;
+    cursor: pointer;
+}
+
