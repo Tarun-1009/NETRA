@@ -25,7 +25,7 @@ function NavBar() {
                 </ul>
 
                 {/* Button */}
-                <button className="navbar-btn">
+                <button className="navbar-btn" onClick={() => window.location.href = '/vision'}>
                     <span>Join Now</span>
                 </button>
         </nav>
