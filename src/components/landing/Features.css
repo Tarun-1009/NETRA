@@ -12,7 +12,6 @@
 }
 
 .features-section {
-    background-color: var(--bg-dark);
     color: var(--text-main);
     padding: 6rem 2rem;
     position: relative;
