@@ -14,7 +14,7 @@ function About() {
         <div class="container">
             <div class="grid">
                 <div class="card">
-                    <h3><i class="fas fa-eye"></i> The Mission</h3>
+                    <h3 class="fas fa-eye"> The Mission</h3>
                     <p>To break the barriers of independence for visually impaired individuals by converting the visual world into real-time auditory insights using Generative AI.</p>
                 </div>
                 <div class="card">
