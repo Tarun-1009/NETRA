@@ -64,7 +64,7 @@
 }
 
 .feature-card:hover {
-    transform: translateY(-5px);
+    /* transform: translateY(-5px); */
 }
 
 /* Glowing Border Effect using ::before */

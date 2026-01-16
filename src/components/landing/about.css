@@ -1,110 +1,227 @@
 :root {
-    --primary: #2563eb;
-    --dark: #0f172a;
-    --light: #f8fafc;
-    --accent: #38bdf8;
+    --bg-dark: #050505;
+    --text-white: #ffffff;
+    --text-gray: #a1a1aa;
+    --card-bg: #0f0f11;
+
+    --glow-orange: #f97316;
+    --glow-blue: #3b82f6;
+    --glow-green: #22c55e;
+    --glow-pink: #ea16ca;
 }
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 body {
-    background-color: var(--light);
-    color: var(--dark);
+
+    color: var(--text-white);
     line-height: 1.6;
 }
 
+.about-wrapper {
+
+    min-height: 100vh;
+    padding: 80px 20px;
+    padding-bottom: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
 .container {
-    max-width: 1000px;
+    max-width: 1200px;
+    width: 100%;
     margin: 0 auto;
-    padding: 0 20px;
 }
 
-/* Hero Section */
-.about-hero {
-    background: linear-gradient(135deg, var(--dark) 0%, #1e293b 100%);
-    color: white;
-    padding: 80px 0;
-    text-align: center;
+/* Header */
+.about-header {
+    margin-bottom: 60px;
+    text-align: left;
 }
 
-.about-hero h1 {
-    font-size: 3.5rem;
-    letter-spacing: 4px;
-    margin-bottom: 10px;
+.about-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: var(--text-white);
 }
 
-.subtitle {
-    color: var(--accent);
-    font-size: 1.2rem;
-    font-weight: 300;
+.about-header h1 .highlight {
+    color: var(--text-white);
+    /* Or a brand color if needed */
 }
 
-.line {
-    width: 60px;
-    height: 4px;
-    background: var(--primary);
-    margin: 20px auto;
+.sub-header-text {
+    font-size: 1.1rem;
+    color: var(--text-gray);
+    margin-bottom: 2rem;
+    max-width: 600px;
 }
 
-/* Content Cards */
-.project-info {
-    padding: 60px 0;
+.sub-header-small {
+    font-size: 0.9rem;
+    color: var(--text-gray);
+    margin-bottom: 2rem;
 }
 
-.grid {
+
+/* Cards Grid */
+.cards-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 30px;
-    margin-bottom: 50px;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+    margin-bottom: 60px;
 }
 
-.card {
-    background: white;
-    padding: 30px;
+.glow-card {
+    background-color: var(--card-bg);
+    border-radius: 20px;
+    padding: 32px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 380px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glow-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Internal Glow Effect */
+.glow-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 150px;
+    background: radial-gradient(circle at top, var(--glow-color), transparent 70%);
+    opacity: 0.15;
+    transition: opacity 0.3s;
+}
+
+.glow-card:hover::before {
+    opacity: 0.3;
+}
+
+/* Bottom Line Glow */
+.glow-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--glow-color);
+    box-shadow: 0 0 20px var(--glow-color);
+}
+
+/* Card Specific Colors */
+.card-orange {
+    --glow-color: var(--glow-orange);
+}
+
+.card-blue {
+    --glow-color: var(--glow-blue);
+}
+
+.card-green {
+    --glow-color: var(--glow-green);
+}
+
+.card-pink {
+    --glow-color: var(--glow-pink);
+}
+
+.mini-card {
+    min-height: auto;
+    padding: 24px;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+
+.card-icon-box {
+    width: 48px;
+    height: 48px;
     border-radius: 12px;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    border-top: 4px solid var(--primary);
-    
-}
-.card p {
-    font-size: 15px;
-    color: #0f172a;
-    margin-bottom: 15px;
-    text-align: center;
-}
-.card h3 {
-    font-size: 20px;
-    color: var(--primary);
-    margin-bottom: 15px;
-    text-align: center;
+    background: rgba(255, 255, 255, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    font-size: 1.2rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-white);
 }
 
-.problem-statement {
-    background: #e2e8f0;
-    padding: 40px;
-    color: #0f172a;
-    border-radius: 12px;
-    text-align: center;
+.glow-card h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--text-white);
 }
 
-/* Team Section */
+.glow-card p {
+    font-size: 1rem;
+    color: var(--text-gray);
+    line-height: 1.6;
+    margin-bottom: 24px;
+    flex-grow: 1;
+}
+
+.card-link {
+    color: var(--text-white);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    display: inline-flex;
+    align-items: center;
+    transition: opacity 0.2s;
+}
+
+.card-link:hover {
+    opacity: 0.8;
+}
+
+/* Footer Icons */
+
+
+.features-footer span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.features-footer i {
+    color: var(--text-white);
+}
+
+
+/* Team Section (Adapted to Dark) */
 .team-section {
-    background: linear-gradient(135deg, var(--dark) 0%, #1e293b 100%);
-    padding: 60px 0;
+    width: 100%;
+    margin-top: 80px;
+    padding-top: 60px;
+
 }
 
 .team-section h2 {
     text-align: center;
     margin-bottom: 40px;
-    color: #000;
-    background: #e2e8f0;
-    border-radius: 8px;
-    transition: transform 0.3s;
+    color: var(--text-white);
+    font-size: 2rem;
 }
 
 .team-grid {
@@ -114,34 +231,50 @@ body {
 }
 
 .member {
-    text-align: center;
-    padding: 20px;
-    background: var(--light);
-    border-radius: 8px;
+    /* Styles now handled by .glow-card */
     transition: transform 0.3s;
-    background: #e2e8f0;
-    
 }
 
 .member:hover {
     transform: translateY(-5px);
-    background: #dbeafe;
 }
 
 .member h4 {
-    margin-bottom: 5px;
-    color: var(--dark);
+    margin-bottom: 8px;
+    color: var(--text-white);
 }
 
 .member span {
     font-size: 0.9rem;
-    color: #64748b;
+    color: var(--text-gray);
+}
+
+/* GitHub Icon Link */
+.icon-link {
+    font-size: 1.5rem;
+    /* Larger icon */
+    margin-top: 12px;
+    z-index: 10;
+    /* Ensure it stays on top of any absolute layers */
+    position: relative;
+    display: inline-block;
+    color: var(--text-gray);
+    transition: color 0.3s, transform 0.2s;
+}
+
+.icon-link:hover {
+    color: var(--text-white);
+    transform: scale(1.1);
 }
 
 footer {
+
+    justify-content: center;
     text-align: center;
-    padding: 40px;
-    background: var(--dark);
-    color: white;
+    color: var(--text-gray);
     font-size: 0.9rem;
+
+    margin-top: 40px;
+    height: 10px;
+
 }
