@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import "./Vision.css"
+import { saveImageToGallery } from "./utils";
 
 const Vision = () => {
   const videoRef = useRef(null);
-  const [fps, setFps] = useState(30);
+  const canvasRef = useRef(null);
   const [resolution, setResolution] = useState('1920x1080');
 
   useEffect(() => {
@@ -21,12 +22,26 @@ const Vision = () => {
       })
       .catch(err => console.error("Error accessing camera:", err));
 
-    const fpsInterval = setInterval(() => {
-      setFps(Math.floor(28 + Math.random() * 4));
-    }, 2000);
 
-    return () => clearInterval(fpsInterval);
   }, []);
+
+  const handleScan = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+
+    // Set canvas dimensions to match video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    // Draw the current video frame to canvas
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // Save the image
+    saveImageToGallery(canvas);
+  };
 
   return (
     <div className="app-container">
@@ -37,7 +52,11 @@ const Vision = () => {
           playsInline
           muted
           id="video-feed"
+          onClick={handleScan}
         />
+
+        {/* Hidden canvas for image capture */}
+        <canvas ref={canvasRef} style={{ display: 'none' }} />
 
         <div className="top-bar">
           <div className="logo-text">NETRA</div>
@@ -50,9 +69,6 @@ const Vision = () => {
         <div className="bottom-info">
           <div className="info-text">
             {resolution}
-          </div>
-          <div className="info-text">
-            <span className="info-value">{fps} FPS</span>
           </div>
         </div>
       </div>
