@@ -1,0 +1,140 @@
+:root {
+    --primary: #2563eb;
+    --dark: #0f172a;
+    --light: #f8fafc;
+    --accent: #38bdf8;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: var(--light);
+    color: var(--dark);
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Hero Section */
+.about-hero {
+    background: linear-gradient(135deg, var(--dark) 0%, #1e293b 100%);
+    color: white;
+    padding: 80px 0;
+    text-align: center;
+}
+
+.about-hero h1 {
+    font-size: 3.5rem;
+    letter-spacing: 4px;
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    color: var(--accent);
+    font-size: 1.2rem;
+    font-weight: 300;
+}
+
+.line {
+    width: 60px;
+    height: 4px;
+    background: var(--primary);
+    margin: 20px auto;
+}
+
+/* Content Cards */
+.project-info {
+    padding: 60px 0;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+    margin-bottom: 50px;
+}
+
+.card {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-top: 4px solid var(--primary);
+}
+
+.card i {
+    font-size: 2rem;
+    color: var(--primary);
+    margin-bottom: 15px;
+}
+
+.problem-statement {
+    background: #e2e8f0;
+    padding: 40px;
+    color: #0f172a;
+    border-radius: 12px;
+    text-align: center;
+}
+
+/* Team Section */
+.team-section {
+    background: linear-gradient(135deg, var(--dark) 0%, #1e293b 100%);
+    padding: 60px 0;
+}
+
+.team-section h2 {
+    text-align: center;
+    margin-bottom: 40px;
+    color: #000;
+    background: #e2e8f0;
+    border-radius: 8px;
+    transition: transform 0.3s;
+}
+
+.team-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.member {
+    text-align: center;
+    padding: 20px;
+    background: var(--light);
+    border-radius: 8px;
+    transition: transform 0.3s;
+    background: #e2e8f0;
+    
+}
+
+.member:hover {
+    transform: translateY(-5px);
+    background: #dbeafe;
+}
+
+.member h4 {
+    margin-bottom: 5px;
+    color: var(--dark);
+}
+
+.member span {
+    font-size: 0.9rem;
+    color: #64748b;
+}
+
+footer {
+    text-align: center;
+    padding: 40px;
+    background: var(--dark);
+    color: white;
+    font-size: 0.9rem;
+}
