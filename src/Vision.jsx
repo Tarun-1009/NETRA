@@ -1,7 +1,7 @@
 import { apireq } from "../api/apihandling";
 import React, { useEffect, useRef, useState } from 'react';
 import "./Vision.css"
-import { saveImageToGallery } from "./utils";
+import { saveImageToGallery, speakText } from "./utils";
 
 const Vision = () => {
   const videoRef = useRef(null);
@@ -26,7 +26,7 @@ const Vision = () => {
 
   }, []);
 
-  const handleScan = () => {
+  const handleScan = async () => {
     if (!videoRef.current || !canvasRef.current) return;
 
     const video = videoRef.current;
@@ -42,7 +42,9 @@ const Vision = () => {
 
     
     // Save the image
-    saveImageToGallery(canvas);
+    const base64Image = saveImageToGallery(canvas);
+    const text= await apireq(base64Image);
+    speakText(text);
   };
 
   return (
