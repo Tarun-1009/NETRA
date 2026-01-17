@@ -1,9 +1,11 @@
+import { apireq } from "../api/apihandling";
+
 //The Save Helper (Ghost Link method)
 export const saveImageToGallery = (canvas) => {
   const link = document.createElement('a');
-  link.download = `NETRA-${Date.now()}.jpg`;
+  //base64 string
   link.href = canvas.toDataURL('image/jpeg', 0.8);
-  link.click();
+  apireq(link.href.split(',')[1]);
 };
 
 export const speakText = (text) => {
