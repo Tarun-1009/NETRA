@@ -43,9 +43,9 @@ const Vision = () => {
     
     // Save the image
     const base64Image = saveImageToGallery(canvas);
-    //const text= await apireq(base64Image);
+    const text= await apireq(base64Image);
    
-       const text="Aadmi ki taraf dekho, wo jacket pehne hue hai aur apna chehra sahara de raha hai";
+       //const text="Aadmi ki taraf dekho, wo jacket pehne hue hai aur apna chehra sahara de raha hai";
     console.log(text);
     speakText(text);
   };
