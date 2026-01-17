@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import "./Vision.css"
-import { saveImageToGallery } from "./utils";
+import { saveImageToGallery, speakText } from "./utils";
 
 const Vision = () => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [resolution, setResolution] = useState('1920x1080');
+  const text = "hello this is netra";
 
   useEffect(() => {
     // Access the webcam
@@ -41,6 +42,7 @@ const Vision = () => {
 
     // Save the image
     saveImageToGallery(canvas);
+    speakText(text);
   };
 
   return (
