@@ -40,6 +40,7 @@ const Vision = () => {
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
+    
     // Save the image
     saveImageToGallery(canvas);
   };
@@ -54,6 +55,7 @@ const Vision = () => {
           muted
           id="video-feed"
           onClick={handleScan}
+
         />
         <button onClick={apireq} id="apitestbutton">API</button>
 
@@ -67,7 +69,6 @@ const Vision = () => {
             <span>Live</span>
           </div>
         </div>
-        <button onClick={apireq}>API</button>
         <div className="bottom-info">
           <div className="info-text">
             {resolution}

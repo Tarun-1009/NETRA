@@ -1,14 +1,25 @@
 import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({
-    apiKey: import.meta.env.VITE_GEMINI_API_KEY 
+    apiKey: import.meta.env.VITE_GEMINI_API_KEY
 });
 
-export const apireq= async () => {
+export const apireq= async (base64image) => {
     try {
+        
+        const contents = [
+  {
+    inlineData: {
+      mimeType: "image/jpeg",
+      data: base64image,
+    },
+  },
+  { text: "You are an assistant for the visually impaired. Describe this image in a single, natural sentence as if speaking to a friend. Do not use phrases like 'image of' or 'pictured here'." },
+];
+    
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash",
-            contents: "Explain how AI works in a few words",
+            contents: contents,
         });
         console.log(response.text);
     } catch (error) {
