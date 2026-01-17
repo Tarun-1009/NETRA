@@ -2,6 +2,7 @@ import { apireq } from "../api/apihandling";
 import React, { useEffect, useRef, useState } from 'react';
 import "./Vision.css"
 import { saveImageToGallery, speakText } from "./utils";
+import { playClick, playSuccess, playError } from './sound';
 
 const Vision = () => {
   const videoRef = useRef(null);
@@ -23,10 +24,20 @@ const Vision = () => {
       })
       .catch(err => console.error("Error accessing camera:", err));
 
+    const welcomeUser = () => {
+      // Small vibration 
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+
+      // Speak instructions
+      speakText("Netra is online. Tap anywhere to scan.");
+    };
+    welcomeUser();
+
 
   }, []);
 
   const handleScan = async () => {
+    playClick();
     if (!videoRef.current || !canvasRef.current) return;
 
     const video = videoRef.current;
@@ -40,14 +51,19 @@ const Vision = () => {
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    
+
     // Save the image
     const base64Image = saveImageToGallery(canvas);
-    const text= await apireq(base64Image);
-   
-       //const text="Aadmi ki taraf dekho, wo jacket pehne hue hai aur apna chehra sahara de raha hai";
-    console.log(text);
-    speakText(text);
+    try {
+      const text = await apireq(base64Image);
+      //const text="Aadmi ki taraf dekho, wo jacket pehne hue hai aur apna chehra sahara de raha hai";
+      playSuccess();
+      speakText(text);
+    } catch (error) {
+      playError();
+    }
+
+
   };
 
   return (
