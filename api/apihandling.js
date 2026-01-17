@@ -3,6 +3,15 @@ import { GoogleGenAI } from "@google/genai";
 const ai = new GoogleGenAI({
     apiKey: import.meta.env.VITE_GEMINI_API_KEY
 });
+const prompt = `
+  You are a guide for a blind person in India.
+  Identify the object, currency, or text.
+  
+  CRITICAL:
+  - response in Hinglish.
+  - Keep it very short (under 2 sentences).
+`;
+
 // api request function
 export const apireq= async (base64image) => {
     try {
@@ -14,9 +23,8 @@ export const apireq= async (base64image) => {
           data: base64image,
           },
         },
-        { text: "You are an assistant for the visually impaired. Describe this image in a single, natural sentence as if speaking to a friend. Do not use phrases like 'image of' or 'pictured here'." },
-    ];
-    
+        { text: prompt},
+    ]; 
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash-lite",
             contents: contents,
