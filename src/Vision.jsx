@@ -1,3 +1,4 @@
+import { apireq } from "../api/apihandling";
 import React, { useEffect, useRef, useState } from 'react';
 import "./Vision.css"
 import { saveImageToGallery } from "./utils";
@@ -39,6 +40,7 @@ const Vision = () => {
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
+    
     // Save the image
     saveImageToGallery(canvas);
   };
@@ -53,7 +55,9 @@ const Vision = () => {
           muted
           id="video-feed"
           onClick={handleScan}
+
         />
+        <button onClick={apireq} id="apitestbutton">API</button>
 
         {/* Hidden canvas for image capture */}
         <canvas ref={canvasRef} style={{ display: 'none' }} />
@@ -65,7 +69,6 @@ const Vision = () => {
             <span>Live</span>
           </div>
         </div>
-
         <div className="bottom-info">
           <div className="info-text">
             {resolution}
