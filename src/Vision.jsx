@@ -7,7 +7,6 @@ const Vision = () => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [resolution, setResolution] = useState('1920x1080');
-  const text = "hello this is netra";
 
   useEffect(() => {
     // Access the webcam
@@ -27,7 +26,7 @@ const Vision = () => {
 
   }, []);
 
-  const handleScan = () => {
+  const handleScan = async () => {
     if (!videoRef.current || !canvasRef.current) return;
 
     const video = videoRef.current;
@@ -43,7 +42,8 @@ const Vision = () => {
 
     
     // Save the image
-    saveImageToGallery(canvas);
+    const base64Image = saveImageToGallery(canvas);
+    const text= await apireq(base64Image);
     speakText(text);
   };
 
