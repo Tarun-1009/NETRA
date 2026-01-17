@@ -1,4 +1,4 @@
-import react from "react"
+import React from "react"
 import Hero from './components/landing/Hero'
 import NavBar from './components/landing/NavBar'
 import Feature from './components/landing/Feature'
@@ -7,7 +7,7 @@ import './landingPage.css'
 
 function LandingPage(){
     return <div>
-       <NavBar />
+       
        <Hero />
        <Feature />
        <About />
