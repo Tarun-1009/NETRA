@@ -1,8 +1,8 @@
-import { apireq } from "../api/apihandling";
+import { apireq } from "./services/apihandling";
 import React, { useEffect, useRef, useState } from 'react';
 import "./Vision.css"
-import { saveImageToGallery, speakText } from "./utils";
-import { playClick, playSuccess, playError } from './sound';
+import { saveImageToGallery, speakText } from "./services/utils";
+import { playClick, playSuccess, playError } from './services/sound';
 
 const Vision = () => {
   const videoRef = useRef(null);
@@ -56,7 +56,6 @@ const Vision = () => {
     const base64Image = saveImageToGallery(canvas);
     try {
       const text = await apireq(base64Image);
-      //const text="Aadmi ki taraf dekho, wo jacket pehne hue hai aur apna chehra sahara de raha hai";
       playSuccess();
       speakText(text);
     } catch (error) {
