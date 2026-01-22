@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { loadOfflineBrain } from '../services/BrainManager';
+import { loadOfflineBrain } from '../../services/BrainManager';
 
 const SetupScreen = ({ onComplete }) => {
     const [progress, setProgress] = useState(0);
@@ -18,7 +18,8 @@ const SetupScreen = ({ onComplete }) => {
                 setStatus("Ready!");
                 setTimeout(onComplete, 500); // Wait 0.5s then finish
             } catch (err) {
-                setStatus("Error: Check Internet Connection");
+                console.error("SetupScreen error:", err);
+                setStatus(`Error: ${err.message || "Check Internet"}`);
             }
         };
 

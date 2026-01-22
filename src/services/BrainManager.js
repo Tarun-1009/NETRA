@@ -20,6 +20,8 @@ let model = null;
 let processor = null;
 let tokenizer = null;
 
+export const isBrainReady = () => model !== null;
+
 /**
  * 1. THE LOADER
  * Downloads the model (~150MB in q4 mode).

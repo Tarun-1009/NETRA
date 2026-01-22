@@ -3,14 +3,19 @@ import React, { useEffect, useRef, useState } from 'react';
 import "./Vision.css"
 import { saveImageToGallery, speakText } from "./services/utils";
 import { playClick, playSuccess, playError } from './services/sound';
+import { askOfflineBrain, isBrainReady } from "./services/BrainManager";
+import SetupScreen from "./components/vision/SetupScreen";
 
 const Vision = () => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [resolution, setResolution] = useState('1920x1080');
+  const [isReady, setIsReady] = useState(isBrainReady());
 
   useEffect(() => {
-    // Access the webcam
+    if (!isReady) return; // Wait until model is ready before starting camera
+
+    console.log("📸 Initializing webcam...");
     navigator.mediaDevices.getUserMedia({ video: true })
       .then(stream => {
         if (videoRef.current) {
@@ -20,21 +25,20 @@ const Vision = () => {
           const videoTrack = stream.getVideoTracks()[0];
           const settings = videoTrack.getSettings();
           setResolution(`${settings.width}x${settings.height}`);
+          console.log(`✅ Camera ready: ${settings.width}x${settings.height}`);
         }
       })
-      .catch(err => console.error("Error accessing camera:", err));
+      .catch(err => {
+        console.error("❌ Error accessing camera:", err);
+        speakText("Camera access failed. Please check permissions.");
+      });
 
     const welcomeUser = () => {
-      // Small vibration 
       if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-
-      // Speak instructions
       speakText("Netra is online. Tap anywhere to scan.");
     };
     welcomeUser();
-
-
-  }, []);
+  }, [isReady]); // Re-run when isReady becomes true
 
   const handleScan = async () => {
     playClick();
@@ -59,11 +63,26 @@ const Vision = () => {
       playSuccess();
       speakText(text);
     } catch (error) {
-      playError();
+      console.log("Gemini API failed, falling back to Florence-2...");
+      try {
+        // Convert canvas to blob for Florence-2
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
+        const offlineText = await askOfflineBrain(blob);
+        playSuccess();
+        speakText(offlineText);
+      } catch (offlineError) {
+        console.error("Offline brain also failed:", offlineError);
+        playError();
+        speakText("I'm sorry, I couldn't understand the image.");
+      }
     }
 
 
   };
+
+  if (!isReady) {
+    return <SetupScreen onComplete={() => setIsReady(true)} />;
+  }
 
   return (
     <div className="app-container">

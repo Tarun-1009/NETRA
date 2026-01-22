@@ -13,18 +13,18 @@ const prompt = `
 `;
 
 // api request function
-export const apireq= async (base64image) => {
+export const apireq = async (base64image) => {
     try {
-        
+
         const contents = [
-        {
-          inlineData: {
-          mimeType: "image/jpeg",
-          data: base64image,
-          },
-        },
-        { text: prompt},
-    ]; 
+            {
+                inlineData: {
+                    mimeType: "image/jpeg",
+                    data: base64image,
+                },
+            },
+            { text: prompt },
+        ];
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash-lite",
             contents: contents,
@@ -32,5 +32,6 @@ export const apireq= async (base64image) => {
         return response.text;
     } catch (error) {
         console.error("error in API", error.message);
+        throw error;
     }
 };
