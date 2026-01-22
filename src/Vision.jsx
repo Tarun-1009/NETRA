@@ -1,117 +1,160 @@
-import { apireq } from "./services/apihandling";
 import React, { useEffect, useRef, useState } from 'react';
-import "./Vision.css"
-import { saveImageToGallery, speakText } from "./services/utils";
+import { apireq } from "./services/apihandling"; 
+import { loadOfflineBrain, askOfflineBrain } from "./services/BrainManager";
+import { speakText } from "./services/utils";
 import { playClick, playSuccess, playError } from './services/sound';
-import { askOfflineBrain, isBrainReady } from "./services/BrainManager";
-import SetupScreen from "./components/vision/SetupScreen";
+import "./Vision.css";
 
 const Vision = () => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  const [resolution, setResolution] = useState('1920x1080');
-  const [isReady, setIsReady] = useState(isBrainReady());
+  const [isOfflineReady, setIsOfflineReady] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  
+  // New State for Text Input Fallback
+  const [textQuestion, setTextQuestion] = useState("");
+
+  const longPressTimer = useRef(null);
+  const isHolding = useRef(false);
+  const recognitionRef = useRef(null);
 
   useEffect(() => {
-    if (!isReady) return; // Wait until model is ready before starting camera
-
-    console.log("📸 Initializing webcam...");
+    // 1. Setup Camera
     navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
+      .then(stream => { if (videoRef.current) videoRef.current.srcObject = stream; });
 
-          // Get actual video resolution
-          const videoTrack = stream.getVideoTracks()[0];
-          const settings = videoTrack.getSettings();
-          setResolution(`${settings.width}x${settings.height}`);
-          console.log(`✅ Camera ready: ${settings.width}x${settings.height}`);
+    // 2. Load Offline Brain
+    loadOfflineBrain((p) => console.log(`Brain: ${p}%`)).then(() => setIsOfflineReady(true));
+
+    speakText("Netra Online.");
+
+    // Keyboard shortcuts
+    const handleKeyDown = (e) => {
+        if (e.code === 'Space' && !isHolding.current && document.activeElement.tagName !== 'INPUT') {
+            isHolding.current = true;
+            startListening();
         }
-      })
-      .catch(err => {
-        console.error("❌ Error accessing camera:", err);
-        speakText("Camera access failed. Please check permissions.");
-      });
-
-    const welcomeUser = () => {
-      if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-      speakText("Netra is online. Tap anywhere to scan.");
     };
-    welcomeUser();
-  }, [isReady]); // Re-run when isReady becomes true
+    const handleKeyUp = (e) => {
+        if (e.code === 'Space' && document.activeElement.tagName !== 'INPUT') {
+            endListening();
+        }
+    };
 
-  const handleScan = async () => {
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+        window.removeEventListener('keydown', handleKeyDown);
+        window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
+
+  // --- CORE AI HANDLER ---
+  const handleProcess = async (question = null) => {
     playClick();
-    if (!videoRef.current || !canvasRef.current) return;
-
-    const video = videoRef.current;
     const canvas = canvasRef.current;
+    const video = videoRef.current;
+    if (!video || !canvas) return;
 
-    // Set canvas dimensions to match video
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    const base64 = canvas.toDataURL('image/jpeg');
 
-    // Draw the current video frame to canvas
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-
-    // Save the image
-    const base64Image = saveImageToGallery(canvas);
     try {
-      const text = await apireq(base64Image);
-      playSuccess();
-      speakText(text);
-    } catch (error) {
-      console.log("Gemini API failed, falling back to Florence-2...");
-      try {
-        // Convert canvas to blob for Florence-2
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
-        const offlineText = await askOfflineBrain(blob);
-        playSuccess();
-        speakText(offlineText);
-      } catch (offlineError) {
-        console.error("Offline brain also failed:", offlineError);
-        playError();
-        speakText("I'm sorry, I couldn't understand the image.");
+      let textResponse = "";
+      console.log("Asking Question:", question || "Describe Scene");
+
+      if (navigator.onLine) {
+        textResponse = await apireq(base64, question);
+      } else if (isOfflineReady) {
+        const blob = await (await fetch(base64)).blob();
+        textResponse = await askOfflineBrain(blob, question);
+      } else {
+        textResponse = "Offline brain still loading...";
       }
+
+      console.log("AI Response:", textResponse);
+      playSuccess();
+      speakText(textResponse);
+      setTextQuestion(""); // Clear input after asking
+
+    } catch (error) {
+      console.error(error);
+      playError();
+      speakText("Error processing request.");
     }
-
-
   };
 
-  if (!isReady) {
-    return <SetupScreen onComplete={() => setIsReady(true)} />;
-  }
+  // --- VOICE LOGIC (Restored to English for Stability) ---
+  const startListening = () => {
+    setIsListening(true);
+    window.speechSynthesis.cancel();
+    if (recognitionRef.current) recognitionRef.current.abort();
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return speakText("Voice not supported.");
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US'; // SWITCHED TO ENGLISH (More stable on Laptop)
+    recognition.continuous = false;
+
+    recognition.onstart = () => console.log("Mic On");
+    
+    recognition.onresult = (e) => {
+        const q = e.results[0][0].transcript;
+        handleProcess(q);
+        setIsListening(false);
+    };
+
+    recognition.onerror = (e) => {
+        console.error("Mic Error:", e.error);
+        setIsListening(false);
+        if (e.error === 'network') speakText("Browser blocked voice. Use text box.");
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  };
+
+  const endListening = () => {
+    clearTimeout(longPressTimer.current);
+    setTimeout(() => { isHolding.current = false; }, 200);
+  };
 
   return (
-    <div className="app-container">
-      <div className="glow-frame">
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          id="video-feed"
-          onClick={handleScan}
-
-        />
-        <button onClick={apireq} id="apitestbutton">API</button>
-
-        {/* Hidden canvas for image capture */}
+    <div className="app-container"
+      onMouseDown={() => { if(document.activeElement.tagName !== 'INPUT') longPressTimer.current = setTimeout(startListening, 500); }}
+      onMouseUp={endListening}
+      onClick={() => { if (!isHolding.current && !isListening && document.activeElement.tagName !== 'INPUT') handleProcess(null); }}
+    >
+      <div className={`glow-frame ${isListening ? 'listening' : ''}`}>
+        <video ref={videoRef} autoPlay playsInline muted id="video-feed" />
         <canvas ref={canvasRef} style={{ display: 'none' }} />
-
+        
         <div className="top-bar">
           <div className="logo-text">NETRA</div>
-          <div className="status-badge">
-            <div className="status-dot"></div>
-            <span>Live</span>
-          </div>
+          <div className={`status-dot ${isListening ? 'listening' : (isOfflineReady ? 'ready' : 'loading')}`}></div>
         </div>
+
+        {/* --- NEW: DEBUG TEXT INPUT --- */}
+        <div className="debug-input-container" onClick={(e) => e.stopPropagation()}>
+            <input 
+                type="text" 
+                placeholder="Type question & press Enter..." 
+                value={textQuestion}
+                onChange={(e) => setTextQuestion(e.target.value)}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                        handleProcess(textQuestion);
+                        e.target.blur(); // Close keyboard on mobile
+                    }
+                }}
+            />
+        </div>
+
         <div className="bottom-info">
-          <div className="info-text">
-            {resolution}
-          </div>
+           {isListening ? "🔴 LISTENING..." : "Click Scan • Spacebar Voice • Type Below"}
         </div>
       </div>
     </div>

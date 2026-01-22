@@ -166,3 +166,58 @@
     cursor: pointer;
     transition: background-color 0.3s ease;
 }
+
+/* Add a red pulse animation for when the mic is active */
+.status-dot.listening {
+  background-color: #ff0000;
+  box-shadow: 0 0 15px #ff0000;
+  animation: pulse-red 0.5s infinite;
+}
+
+@keyframes pulse-red {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* Optional: Make the border turn red too */
+.glow-frame.listening {
+  border-color: #ff0000;
+  box-shadow: 0 0 30px rgba(255, 0, 0, 0.3);
+}
+
+/* Update this section in Vision.css */
+.debug-input-container {
+    position: absolute;
+    bottom: 85px; /* Sits nicely above the status text */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 400px;
+    z-index: 20;
+    transition: all 0.3s ease;
+}
+
+.debug-input-container input {
+    width: 100%;
+    padding: 12px 20px;
+    border-radius: 30px;
+    border: 2px solid rgba(0, 255, 0, 0.5); /* High contrast green */
+    background: rgba(0, 0, 0, 0.85);
+    color: #fff;
+    font-size: 16px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    outline: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+.debug-input-container input:focus {
+    border-color: #00ff00;
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.4);
+    background: rgba(0, 0, 0, 0.95);
+}
+
+.debug-input-container input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+    font-style: italic;
+}

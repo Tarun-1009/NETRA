@@ -1,99 +1,78 @@
-import {
-    Florence2ForConditionalGeneration,
-    AutoProcessor,
-    AutoTokenizer,
-    RawImage,
-    env
+import { 
+    Florence2ForConditionalGeneration, 
+    AutoProcessor, 
+    AutoTokenizer, 
+    RawImage, 
+    env 
 } from '@huggingface/transformers';
 
-// ---------------- CONFIGURATION ----------------
-// Disable local file checks (we fetch from web)
+// Configuration
 env.allowLocalModels = false;
-// Enable caching (so it works offline after 1st run)
 env.useBrowserCache = true;
 
-// The Model ID: Fine-tuned Florence-2 (ONNX version)
 const MODEL_ID = 'onnx-community/Florence-2-base-ft';
 
-// Singleton variables to hold the loaded brain
+// Singleton state
 let model = null;
 let processor = null;
 let tokenizer = null;
 
+// Exported check function
 export const isBrainReady = () => model !== null;
 
 /**
- * 1. THE LOADER
- * Downloads the model (~150MB in q4 mode).
- * Tracks progress for your UI bar.
+ * Loads the AI Model into memory
  */
 export const loadOfflineBrain = async (onProgress) => {
-    if (model) return; // Stop if already loaded
-
-    console.log("📥 Initializing Florence-2 (Turbo Mode)...");
+    if (model) return;
 
     try {
-        // A. Check for WebGPU (Graphics Card support)
-        // If browser supports it, it's 10x faster. If not, fallback to CPU (wasm).
-        const device = navigator.gpu ? 'webgpu' : 'wasm';
-        console.log(`🚀 Accelerator: ${device.toUpperCase()}`);
-
-        // B. Load the AI Model
+        console.log("📥 Loading Florence-2...");
+        const device = 'wasm'; // CPU fallback for stability
+        
         model = await Florence2ForConditionalGeneration.from_pretrained(MODEL_ID, {
-            device: device,
-            dtype: "q4",    // <--- SPEED TRICK: 4-bit mode (Smaller & Faster)
-            progress_callback: (data) => {
-                // Send download % back to the UI
-                if (data.status === 'progress' && onProgress) {
-                    onProgress(Math.round(data.progress));
-                }
+            device,
+            dtype: "q4",
+            progress_callback: (d) => {
+                if (d.status === 'progress' && onProgress) onProgress(Math.round(d.progress));
             }
         });
 
-        // C. Load Helper Tools (Processor & Tokenizer)
         processor = await AutoProcessor.from_pretrained(MODEL_ID);
         tokenizer = await AutoTokenizer.from_pretrained(MODEL_ID);
-
-        console.log("✅ Offline Brain Ready!");
-
+        console.log("✅ Offline Brain Ready");
     } catch (err) {
-        console.error("❌ Brain Load Failed:", err);
-        throw new Error("Failed to load AI model. Check internet.");
+        console.error("❌ Model Load Failed:", err);
     }
 };
 
 /**
- * 2. THE THINKER
- * Takes an image -> Returns text.
+ * Processes image. If question exists, performs VQA.
  */
-export const askOfflineBrain = async (imageBlob) => {
-    if (!model) throw new Error("Brain not loaded.");
+export const askOfflineBrain = async (imageBlob, question = null) => {
+    if (!model) throw new Error("Offline brain not loaded yet.");
 
-    // A. Prepare Image
     const image = await RawImage.fromURL(URL.createObjectURL(imageBlob));
 
-    // B. Define the Task
-    // <MORE_DETAILED_CAPTION> is the sweet spot between "Too Short" and "Too Slow"
-    const task = '<MORE_DETAILED_CAPTION>';
-    const prompt = task;
+    // LOGIC SWITCH:
+    // If Question -> Use Phrase Grounding (Good for specific answers)
+    // If No Question -> Use Detailed Caption (Good for general scanning)
+    const task = question ? '<CAPTION_TO_PHRASE_GROUNDING>' : '<MORE_DETAILED_CAPTION>';
+    const prompt = question ? `${task} ${question}` : task;
 
-    // C. Pre-process
     const inputs = await processor(image, prompt);
 
-    // D. Generate (The Heavy Math)
     const generated_ids = await model.generate({
         ...inputs,
-        max_new_tokens: 100, // Max words to speak
-        num_beams: 1,        // <--- SPEED TRICK: 1 Beam = Fast. (Don't overthink)
-        do_sample: false,    // Be factual, don't guess.
+        max_new_tokens: 100,
+        num_beams: 1, // Keep at 1 for speed
+        do_sample: false,
     });
 
-    // E. Decode Numbers -> Text
     const generated_text = tokenizer.batch_decode(generated_ids, { skip_special_tokens: false })[0];
-
-    // F. Clean up the result
+    
+    // Post-process to get clean text
     const result = processor.post_process_generation(generated_text, task, image.size);
 
-    // Return the final clean string
-    return `Offline Mode: ${result[task]}`;
+    return result[task];
 };
