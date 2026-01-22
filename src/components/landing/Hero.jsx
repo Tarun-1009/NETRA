@@ -39,6 +39,8 @@ function Hero() {
                     </main>
 
                 </div>
-
-
-export default NetraHero;
+            </section>
+        </div>
+    )
+}
+export default Hero
