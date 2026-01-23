@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate,Link } from 'react-router-dom'; // <--- 1. Import the hook
+import { useNavigate, Link } from 'react-router-dom'; // <--- 1. Import the hook
 import './Navbar.css';
 
 function NavBar() {
@@ -25,10 +25,10 @@ function NavBar() {
                     <Link to="feature" className="link">Features</Link>
                 </li>
                 <li className="navbar-item">
-                  <Link to="about" className="link">About</Link>
+                    <Link to="about">About</Link>
                 </li>
                 <li className="navbar-item">
-                    <Link to="contact" className="link">Contact</Link>
+                    <Link to="contact">Contact</Link>
                 </li>
             </ul>
 
