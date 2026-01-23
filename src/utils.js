@@ -10,9 +10,9 @@ export const saveImageToGallery = (canvas) => {
 export const speakText = (text) => {
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = 1;
+  utterance.rate = 0.9;
   utterance.pitch = 1;
-  utterance.volume = 1;
+  utterance.volume = 3;
   const voices = window.speechSynthesis.getVoices();
   const indianVoice = voices.find((voice) => voice.lang === 'hi-IN');
   if(indianVoice){

@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import "./Vision.css"
 import { saveImageToGallery, speakText } from "./utils";
 import { readTextOCRSpace } from "./services/OcrSpaceService";
+import { playClick, playSuccess, playError } from './sound';
 
 const Vision = () => {
   const videoRef = useRef(null);
@@ -11,11 +12,19 @@ const Vision = () => {
   const [overlayText, setOverlayText] = useState('');
 
   // Wrapper to speak and show text
+  // Wrapper to speak and show text
   const announce = (text) => {
     speakText(text);
     setOverlayText(text);
-    // Clear after 5 seconds to avoid clutter
-    setTimeout(() => setOverlayText(''), 5000);
+
+    // Calculate duration: ~200ms per word, minimum 5s, max 15s.
+    const wordCount = text.split(' ').length;
+    const duration = Math.max(5000, Math.min(wordCount * 400, 15000));
+
+    // Clear any existing timer to prevent early dismissal from previous overlap
+    if (window.overlayTimer) clearTimeout(window.overlayTimer);
+
+    window.overlayTimer = setTimeout(() => setOverlayText(''), duration);
   };
 
   useEffect(() => {
@@ -32,9 +41,21 @@ const Vision = () => {
         }
       })
       .catch(err => console.error("Error accessing camera:", err));
+
+    const welcomeUser = () => {
+      // Small vibration 
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+
+      // Speak instructions
+      speakText("Netra is online. Tap anywhere to scan.");
+    };
+    welcomeUser();
+
   }, []);
 
+  // Main Object/Scene Detection
   const handleScan = async () => {
+    playClick();
     if (!videoRef.current || !canvasRef.current) return;
 
     const video = videoRef.current;
@@ -48,26 +69,39 @@ const Vision = () => {
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-
     // Save the image
     const base64Image = saveImageToGallery(canvas);
-    const text = await apireq(base64Image);
-    announce(text);
+
+    try {
+      const text = await apireq(base64Image);
+      playSuccess();
+      announce(text);
+    } catch (error) {
+      console.error(error);
+      playError();
+      announce("Error processing image. Please try again.");
+    }
   };
 
+  // Text Reading (OCR)
   const handleOCR = async () => {
     if (!videoRef.current) return;
+
+    playClick();
     announce("Scanning text...");
+
     try {
       const text = await readTextOCRSpace(videoRef.current);
       if (text) {
         console.log("OCR Result:", text);
+        playSuccess();
         announce(text);
       } else {
         announce("No text found");
       }
     } catch (error) {
       console.error(error);
+      playError();
       announce("Error reading text");
     }
   };
@@ -82,8 +116,8 @@ const Vision = () => {
           muted
           id="video-feed"
           onClick={handleScan}
-
         />
+
         <button onClick={apireq} id="apitestbutton">API</button>
         <button onClick={handleOCR} id="ocrButton">Read Text</button>
 
