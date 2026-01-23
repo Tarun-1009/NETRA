@@ -7,26 +7,47 @@ import {
 } from '@huggingface/transformers';
 
 // 1. CONFIGURATION
-env.allowLocalModels = false;
+env.allowLocalModels = false; // Keep false to force download/cache consistency
 env.useBrowserCache = true;
 
 const MODEL_ID = 'onnx-community/Florence-2-base-ft';
 
-let model = null;
-let processor = null;
-let tokenizer = null;
+// GLOBAL SINGLETON PATTERN (Prevents OOM during HMR/Relies)
+// Vite HMR re-runs this file, causing multiple model loads -> Memory Crash.
+// We store instances on window to persist them.
+if (!window.netraBrain) {
+    window.netraBrain = {
+        model: null,
+        processor: null,
+        tokenizer: null,
+        loading: false
+    };
+}
 
 // Helper to check status
-export const isBrainReady = () => model !== null;
+export const isBrainReady = () => window.netraBrain.model !== null;
 
 /**
- * LOAD BRAIN (No changes here, just ensures it's loaded)
+ * LOAD BRAIN (Modified for Singleton Safety)
  */
 export const loadOfflineBrain = async (onProgress) => {
-    if (model) return;
+    // 1. If ready, stop.
+    if (window.netraBrain.model) {
+        console.log("🧠 Offline Brain already loaded (from memory).");
+        return;
+    }
+
+    // 2. If loading, wait/attach (simple debounce)
+    if (window.netraBrain.loading) {
+        console.log("⚠️ Brain is already loading...");
+        return;
+    }
+
+    window.netraBrain.loading = true;
     console.log("📥 Starting Offline Brain Load...");
+
     try {
-        model = await Florence2ForConditionalGeneration.from_pretrained(MODEL_ID, {
+        const model = await Florence2ForConditionalGeneration.from_pretrained(MODEL_ID, {
             dtype: "q4",
             device: 'wasm',
             progress_callback: (data) => {
@@ -35,19 +56,32 @@ export const loadOfflineBrain = async (onProgress) => {
                 }
             }
         });
-        processor = await AutoProcessor.from_pretrained(MODEL_ID);
-        tokenizer = await AutoTokenizer.from_pretrained(MODEL_ID);
+        const processor = await AutoProcessor.from_pretrained(MODEL_ID);
+        const tokenizer = await AutoTokenizer.from_pretrained(MODEL_ID);
+
+        // Save to global singleton
+        window.netraBrain.model = model;
+        window.netraBrain.processor = processor;
+        window.netraBrain.tokenizer = tokenizer;
+        window.netraBrain.loading = false;
+
         console.log("🚀 Offline Brain is READY!");
     } catch (err) {
+        window.netraBrain.loading = false;
         console.error("❌ Brain Load Failed:", err);
         throw err;
     }
 };
 
+
 /**
  * ASK BRAIN (Updated to accept Base64 directly)
  */
 export const askOfflineBrain = async (base64Image, question = null) => {
+    const model = window.netraBrain?.model;
+    const processor = window.netraBrain?.processor;
+    const tokenizer = window.netraBrain?.tokenizer;
+
     if (!model) return "Model loading...";
 
     console.log("🧠 Offline Brain: Starting Inference...");

@@ -101,6 +101,10 @@ const Vision = () => {
     }).then(() => {
       console.log("Offline Brain Ready!");
       setIsOfflineReady(true);
+    }).catch(err => {
+      console.error("Offline Brain Load Error:", err);
+      // Optional: set a state to show error
+      setLoadingProgress("Error");
     });
 
     // Keyboard Shortcuts (Spacebar to Talk)
@@ -184,8 +188,8 @@ const Vision = () => {
 
       try {
         // Fallback to Offline Brain (Florence-2)
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
-        const offlineText = await askOfflineBrain(blob);
+        const offlineBase64 = canvas.toDataURL('image/jpeg');
+        const offlineText = await askOfflineBrain(offlineBase64);
 
         playSuccess();
         announce(offlineText);
@@ -314,9 +318,9 @@ const Vision = () => {
           <div className="status-container">
             {/* Status Dot */}
             <div className={`status-dot ${isListening ? 'listening' : (isOfflineReady ? 'ready' : 'loading')}`}></div>
-            {/* Download Percentage (Only if loading) */}
-            {!isOfflineReady && loadingProgress > 0 && (
-              <span className="progress-text">{loadingProgress}%</span>
+            {/* Download Percentage or Error */}
+            {!isOfflineReady && loadingProgress !== 0 && (
+              <span className="progress-text">{loadingProgress}{typeof loadingProgress === 'number' ? '%' : ''}</span>
             )}
 
             {/* OCR Button - Added back from old version */}
