@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { apireq } from "./services/apihandling"; // Correct path to service;
 
 // Services
 import { apireq } from "./services/apihandling";
@@ -7,7 +6,6 @@ import { loadOfflineBrain, askOfflineBrain } from "./services/BrainManager";
 import { speakText } from "./services/utils";
 import { readTextOCRSpace } from "./services/OcrSpaceService";
 import { playClick, playSuccess, playError } from './services/sound';
-import { askOfflineBrain } from "./services/BrainManager";
 
 // Components
 import SetupScreen from "./components/vision/SetupScreen";
@@ -20,20 +18,6 @@ const Vision = () => {
   const [resolution, setResolution] = useState('Initializing...');
   const [overlayText, setOverlayText] = useState('');
   const [isReady, setIsReady] = useState(false); // Controls Setup Screen
-
-  // Wrapper to speak and show text
-  const announce = (text) => {
-    speakText(text);
-    setOverlayText(text);
-
-    // Calculate duration: ~3 words per second, minimum 5s, max 15s.
-    const wordCount = text.split(' ').length;
-    const duration = Math.max(5000, Math.min(wordCount * 400, 15000));
-
-    if (window.overlayTimer) clearTimeout(window.overlayTimer);
-    window.overlayTimer = setTimeout(() => setOverlayText(''), duration);
-  };
-
 
   // AI State
   const [isOfflineReady, setIsOfflineReady] = useState(false);
@@ -48,6 +32,19 @@ const Vision = () => {
   const longPressTimer = useRef(null);
   const isHolding = useRef(false);
   const recognitionRef = useRef(null);
+
+  // Wrapper to speak and show text
+  const announce = (text) => {
+    speakText(text);
+    setOverlayText(text);
+
+    // Calculate duration: ~3 words per second, minimum 5s, max 15s.
+    const wordCount = text.split(' ').length;
+    const duration = Math.max(5000, Math.min(wordCount * 400, 15000));
+
+    if (window.overlayTimer) clearTimeout(window.overlayTimer);
+    window.overlayTimer = setTimeout(() => setOverlayText(''), duration);
+  };
 
   // --- 1. INITIALIZATION ---
   useEffect(() => {
@@ -96,16 +93,9 @@ const Vision = () => {
     };
   }, [isReady]);
 
-  // Main Object/Scene Detection
-  const handleScan = async () => {
-    // A. Start Camera
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-      .then(stream => {
-        if (videoRef.current) videoRef.current.srcObject = stream;
-      })
-      .catch(err => console.error("Camera Error:", err));
-
-    // B. Load Offline Brain (Background)
+  // --- 2. OFFLINE BRAIN & KEYBOARD EVENTS ---
+  useEffect(() => {
+    // Load Offline Brain (Background)
     loadOfflineBrain((percent) => {
       setLoadingProgress(percent);
     }).then(() => {
@@ -113,9 +103,7 @@ const Vision = () => {
       setIsOfflineReady(true);
     });
 
-    speakText("Netra Online.");
-
-    // C. Keyboard Shortcuts (Spacebar to Talk)
+    // Keyboard Shortcuts (Spacebar to Talk)
     const handleKeyDown = (e) => {
       // Prevent triggering if typing in text box
       if (e.code === 'Space' && !isHolding.current && document.activeElement.tagName !== 'INPUT') {
@@ -138,38 +126,30 @@ const Vision = () => {
     };
   }, []);
 
-  // --- 2. CORE PROCESSING LOGIC ---
+  // --- 3. CORE PROCESSING LOGIC ---
   const handleProcess = async (question = null) => {
     playClick();
     setIsScanning(true);
 
     const canvas = canvasRef.current;
     const video = videoRef.current;
+
     if (!video || !canvas) {
       setIsScanning(false);
       return;
     }
 
-    // Capture Image
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    // Save the image
-    const base64Image = saveImageToGallery(canvas);
-
     try {
-      // 1. Try Gemini API
-      const text = await apireq(base64Image);
-    canvas.getContext('2d').drawImage(video, 0, 0);
-    const base64 = canvas.toDataURL('image/jpeg');
+      // Capture Image
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const base64 = canvas.toDataURL('image/jpeg');
 
-    try {
       let textResponse = "";
       console.log(`Processing... Mode: ${navigator.onLine ? "Online" : "Offline"}, Question: ${question}`);
 
-      // A. Online Mode (Gemini)
       // A. Online Mode (Gemini)
       if (navigator.onLine) {
         textResponse = await apireq(base64, question);
@@ -203,8 +183,7 @@ const Vision = () => {
       console.warn("Gemini API failed, falling back to Florence-2...", error);
 
       try {
-        // 2. Fallback to Offline Brain (Florence-2)
-        // Convert canvas to blob for Florence-2
+        // Fallback to Offline Brain (Florence-2)
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
         const offlineText = await askOfflineBrain(blob);
 
@@ -215,14 +194,14 @@ const Vision = () => {
         playError();
         announce("I'm sorry, I couldn't understand the image.");
       }
+    } finally {
+      setIsScanning(false); // END VISUAL FEEDBACK
     }
   };
 
-  // Text Reading (OCR)
+  // --- 4. TEXT READING (OCR) ---
   const handleOCR = async (e) => {
-    // Prevent event bubbling if button is inside a clickable div (though it isn't here)
     if (e) e.stopPropagation();
-
     if (!videoRef.current) return;
 
     playClick();
@@ -244,20 +223,7 @@ const Vision = () => {
     }
   };
 
-  // Show Setup Screen first
-  if (!isReady) {
-    return <SetupScreen onComplete={() => setIsReady(true)} />;
-  }
-
-      console.error("Processing Error:", error);
-      playError();
-      speakText("Error processing. Try again.");
-    } finally {
-      setIsScanning(false); // END VISUAL FEEDBACK
-    }
-  };
-
-  // --- 3. VOICE LOGIC ---
+  // --- 5. VOICE LOGIC ---
   const startListening = () => {
     setIsListening(true);
 
@@ -273,7 +239,7 @@ const Vision = () => {
     }
 
     const recognition = new SpeechRecognition();
-    recognition.lang = 'en-US'; // Use English for stability on Laptop
+    recognition.lang = 'en-US';
     recognition.continuous = false;
     recognition.interimResults = false;
 
@@ -313,30 +279,13 @@ const Vision = () => {
     setTimeout(() => { isHolding.current = false; }, 300);
   };
 
-  // --- 4. RENDER ---
+  // --- 6. RENDER ---
+  // Show Setup Screen first
+  if (!isReady) {
+    return <SetupScreen onComplete={() => setIsReady(true)} />;
+  }
+
   return (
-    <div className="app-container">
-      <div className="glow-frame">
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          id="video-feed"
-          onClick={handleScan}
-        />
-
-        <button onClick={apireq} id="apitestbutton">API</button>
-        <button onClick={handleOCR} id="ocrButton">Read Text</button>
-
-        {/* Message Overlay */}
-        {overlayText && (
-          <div className="glass-message">
-            {overlayText}
-          </div>
-        )}
-
-        {/* Hidden canvas for image capture */}
     <div className="app-container"
       // Mouse/Touch Events for "Hold to Speak"
       onMouseDown={() => {
@@ -348,7 +297,7 @@ const Vision = () => {
       }}
       onTouchEnd={(e) => {
         endListening();
-      }} // Allow click to propagate for scan
+      }}
 
       // Click Event for Standard Scan
       onClick={() => {
@@ -369,8 +318,24 @@ const Vision = () => {
             {!isOfflineReady && loadingProgress > 0 && (
               <span className="progress-text">{loadingProgress}%</span>
             )}
+
+            {/* OCR Button - Added back from old version */}
+            <button
+              className="ocr-button-small"
+              onClick={handleOCR}
+              style={{ marginLeft: '10px', background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '5px' }}
+            >
+              OCR
+            </button>
           </div>
         </div>
+
+        {/* Message Overlay */}
+        {overlayText && (
+          <div className="glass-message">
+            {overlayText}
+          </div>
+        )}
 
         {/* DEBUG TEXT INPUT */}
         {/* The stopPropagation is CRITICAL here */}

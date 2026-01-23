@@ -72,6 +72,18 @@
     letter-spacing: 0.5px;
 }
 
+.status-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.progress-text {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: monospace;
+}
+
 .status-badge {
     padding: 6px 12px;
     background: rgba(0, 0, 0, 0.5);
@@ -231,33 +243,47 @@
 
 /* Add a red pulse animation for when the mic is active */
 .status-dot.listening {
-  background-color: #ff0000;
-  box-shadow: 0 0 15px #ff0000;
-  animation: pulse-red 0.5s infinite;
+    background-color: #ff0000;
+    box-shadow: 0 0 15px #ff0000;
+    animation: pulse-red 0.5s infinite;
 }
 
 @keyframes pulse-red {
-  0% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.2); }
-  100% { opacity: 1; transform: scale(1); }
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.5;
+        transform: scale(1.2);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 /* Optional: Make the border turn red too */
 .glow-frame.listening {
-  border-color: #ff0000;
-  box-shadow: 0 0 30px rgba(255, 0, 0, 0.3);
+    border-color: #ff0000;
+    box-shadow: 0 0 30px rgba(255, 0, 0, 0.3);
 }
 
 /* Container for the text input */
 .debug-input-container {
     position: absolute;
-    bottom: 100px; /* Moved up slightly to avoid thumb overlap */
+    bottom: 100px;
+    /* Moved up slightly to avoid thumb overlap */
     left: 50%;
     transform: translateX(-50%);
     width: 85%;
     max-width: 400px;
-    z-index: 1000; /* CRITICAL: Forces it above the video/glow */
-    pointer-events: auto; /* CRITICAL: Ensures clicks register */
+    z-index: 1000;
+    /* CRITICAL: Forces it above the video/glow */
+    pointer-events: auto;
+    /* CRITICAL: Ensures clicks register */
 }
 
 /* The actual input box */
@@ -279,18 +305,28 @@
     border-color: #00ff00;
     background: #000;
     box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
-    transform: scale(1.05); /* slightly grow so you know it's active */
+    transform: scale(1.05);
+    /* slightly grow so you know it's active */
 }
 
 /* --- SCANNING VISUALS --- */
 .glow-frame.scanning {
-    border-color: #3b82f6; /* Blue */
+    border-color: #3b82f6;
+    /* Blue */
     box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
     animation: pulse-scan 1.5s infinite ease-in-out;
 }
 
 @keyframes pulse-scan {
-    0% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
-    50% { box-shadow: 0 0 50px rgba(59, 130, 246, 0.6); }
-    100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
+    0% {
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 0 50px rgba(59, 130, 246, 0.6);
+    }
+
+    100% {
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+    }
 }
