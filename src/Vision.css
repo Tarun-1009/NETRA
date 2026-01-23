@@ -49,6 +49,11 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+    /* Removed scaleX(-1) to fix mirrored back camera on mobile */
+}
+
+/* Mirror effect for front-facing cameras (desktop webcams) */
+#video-feed.mirror {
     transform: scaleX(-1);
 }
 
@@ -71,6 +76,8 @@
     font-weight: 600;
     color: var(--text);
     letter-spacing: 0.5px;
+    display: none;
+    /* Hide logo from camera feed */
 }
 
 .status-container {

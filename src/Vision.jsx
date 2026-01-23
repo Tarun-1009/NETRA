@@ -18,6 +18,9 @@ const Vision = () => {
   const [resolution, setResolution] = useState('Initializing...');
   const [overlayText, setOverlayText] = useState('');
   const [isReady, setIsReady] = useState(false); // Controls Setup Screen
+  const [hasInteracted, setHasInteracted] = useState(false); // Track first user interaction
+  const [queuedMessage, setQueuedMessage] = useState(null); // Queue message until interaction
+  const [isFrontCamera, setIsFrontCamera] = useState(false); // Track camera type for mirroring
 
   // AI State
   const [isOfflineReady, setIsOfflineReady] = useState(false);
@@ -34,8 +37,15 @@ const Vision = () => {
   const recognitionRef = useRef(null);
 
   // Wrapper to speak and show text
-  const announce = (text) => {
-    speakText(text);
+  const announce = async (text) => {
+    // If user hasn't interacted yet, queue the message
+    if (!hasInteracted) {
+      setQueuedMessage(text);
+      setOverlayText(text);
+      return;
+    }
+
+    await speakText(text);
     setOverlayText(text);
 
     // Calculate duration: ~3 words per second, minimum 5s, max 15s.
@@ -71,15 +81,20 @@ const Vision = () => {
           const videoTrack = stream.getVideoTracks()[0];
           const settings = videoTrack.getSettings();
           setResolution(`${settings.width}x${settings.height}`);
-          console.log(`✅ Camera ready: ${settings.width}x${settings.height}`);
 
-          // Speak welcome
+          // Detect camera facing mode for mirroring
+          const facingMode = settings.facingMode;
+          const isFront = facingMode === 'user' || !facingMode; // 'user' = front camera, undefined = desktop webcam
+          setIsFrontCamera(isFront);
+          console.log(`✅ Camera ready: ${settings.width}x${settings.height}, Facing: ${facingMode || 'user (default)'}, Mirror: ${isFront}`);
+
+          // Queue welcome message (will play on first interaction)
           if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-          speakText("Netra is online. Tap anywhere to scan.");
+          announce("Netra is online. Tap anywhere to scan.");
         }
       } catch (err) {
         console.error("❌ Error accessing camera:", err);
-        speakText("Camera access failed. Please check permissions.");
+        announce("Camera access failed. Please check permissions.");
         setResolution("Camera Error");
       }
     };
@@ -132,6 +147,16 @@ const Vision = () => {
 
   // --- 3. CORE PROCESSING LOGIC ---
   const handleProcess = async (question = null) => {
+    // Mark first interaction
+    if (!hasInteracted) {
+      setHasInteracted(true);
+      // Play queued message if any
+      if (queuedMessage) {
+        await speakText(queuedMessage);
+        setQueuedMessage(null);
+      }
+    }
+
     playClick();
     setIsScanning(true);
 
@@ -162,7 +187,7 @@ const Vision = () => {
         if (textResponse.includes("Connection error") || textResponse.startsWith("Error")) {
           console.warn("Online API failed. Attempting Offline Fallback...");
           if (isOfflineReady) {
-            speakText("Switching to offline mode.");
+            await speakText("Switching to offline mode.");
             textResponse = await askOfflineBrain(base64, question);
           } else {
             textResponse += " Offline brain not ready.";
@@ -228,7 +253,7 @@ const Vision = () => {
   };
 
   // --- 5. VOICE LOGIC ---
-  const startListening = () => {
+  const startListening = async () => {
     setIsListening(true);
 
     // Stop any current speech
@@ -238,7 +263,7 @@ const Vision = () => {
     // Check Browser Support
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      speakText("Voice not supported. Use text box.");
+      await speakText("Voice not supported. Use text box.");
       return;
     }
 
@@ -256,15 +281,15 @@ const Vision = () => {
       setIsListening(false);
     };
 
-    recognition.onerror = (event) => {
+    recognition.onerror = async (event) => {
       console.error("Speech Error:", event.error);
       setIsListening(false);
       isHolding.current = false; // Reset holding state
 
       if (event.error === 'network') {
-        speakText("Browser blocked voice. Please use text box.");
+        await speakText("Browser blocked voice. Please use text box.");
       } else if (event.error === 'not-allowed') {
-        speakText("Microphone permission denied.");
+        await speakText("Microphone permission denied.");
       }
     };
 
@@ -310,7 +335,7 @@ const Vision = () => {
       }}
     >
       <div className={`glow-frame ${isListening ? 'listening' : ''} ${isScanning ? 'scanning' : ''}`}>
-        <video ref={videoRef} autoPlay playsInline muted id="video-feed" />
+        <video ref={videoRef} autoPlay playsInline muted id="video-feed" className={isFrontCamera ? 'mirror' : ''} />
         <canvas ref={canvasRef} style={{ display: 'none' }} />
 
         {/* TOP BAR */}

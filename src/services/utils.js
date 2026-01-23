@@ -7,79 +7,117 @@ export const saveImageToGallery = (canvas) => {
   return link.href.split(',')[1];
 };
 
-export const speakText = (text) => {
+// Global voice cache to ensure consistency
+let selectedVoice = null;
+let voicesInitialized = false;
+
+// Initialize voices on first call
+const initializeVoices = () => {
+  return new Promise((resolve) => {
+    const voices = window.speechSynthesis.getVoices();
+
+    if (voices.length > 0) {
+      resolve(voices);
+      return;
+    }
+
+    let fired = false;
+
+    const handler = () => {
+      if (fired) return;
+      fired = true;
+      window.speechSynthesis.onvoiceschanged = null;
+      resolve(window.speechSynthesis.getVoices());
+    };
+
+    window.speechSynthesis.onvoiceschanged = handler;
+
+    // Timeout fallback for Mac/Safari
+    setTimeout(() => {
+      if (fired) return;
+      fired = true;
+      window.speechSynthesis.onvoiceschanged = null;
+      console.warn("⚠️ Voice loading timed out, using available voices.");
+      resolve(window.speechSynthesis.getVoices());
+    }, 2000); // Increased to 2 seconds for better Mac compatibility
+  });
+};
+
+// Select the best voice consistently
+const selectBestVoice = (voices) => {
+  if (selectedVoice && voices.includes(selectedVoice)) {
+    return selectedVoice; // Use cached voice for consistency
+  }
+
+  // Priority order: en-IN (Indian English) for consistent accent
+  // This ensures same voice in both online and offline mode
+  const preferredVoice =
+    voices.find(v => v.lang === 'en-IN' && v.localService) ||
+    voices.find(v => v.lang === 'en-IN') ||
+    voices.find(v => v.lang === 'en-US' && v.localService) ||
+    voices.find(v => v.lang === 'en-US') ||
+    voices.find(v => v.lang.startsWith('en')) ||
+    voices[0]; // Fallback to first available voice
+
+  selectedVoice = preferredVoice; // Cache for consistency
+
+  if (preferredVoice) {
+    console.log("🗣️ Selected voice:", preferredVoice.name, `(Lang: ${preferredVoice.lang}, Local: ${preferredVoice.localService})`);
+  }
+
+  return preferredVoice;
+};
+
+export const speakText = async (text) => {
   if (!window.speechSynthesis) {
     console.error("Speech Synthesis not supported");
     return;
   }
 
-  // 1. Cancel currently speaking to avoid overlap
+  // Cancel any ongoing speech to avoid overlap
   window.speechSynthesis.cancel();
 
-  // 2. Create Utterance
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = 1.0;
-  utterance.pitch = 1.0;
-  utterance.volume = 1.0;
+  try {
+    // Initialize voices if not already done
+    if (!voicesInitialized) {
+      await initializeVoices();
+      voicesInitialized = true;
+    }
 
-  // 3. Helper to Set Voice and Speak
-  const play = () => {
+    // Small delay to ensure cancel() completes
+    await new Promise(resolve => setTimeout(resolve, 50));
+
     const voices = window.speechSynthesis.getVoices();
+    const voice = selectBestVoice(voices);
 
-    // Helper to find voice with optional local preference
-    const findVoice = (lang, forceLocal) => {
-      return voices.find(v => v.lang === lang && (!forceLocal || v.localService));
-    };
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
 
-    // Priority: Local voices first (for offline support), then any matching voice
-    const preferredVoice =
-      findVoice('hi-IN', true) ||
-      findVoice('en-IN', true) ||
-      findVoice('en-US', true) ||
-      findVoice('hi-IN', false) ||
-      findVoice('en-IN', false) ||
-      findVoice('en-US', false);
-
-    if (preferredVoice) {
-      utterance.voice = preferredVoice;
-      console.log("🗣️ Voice set to:", preferredVoice.name, createStatusString(preferredVoice));
-    } else {
-      console.warn("⚠️ No specific voice found, using system default.");
+    if (voice) {
+      utterance.voice = voice;
     }
 
-    try {
-      window.speechSynthesis.speak(utterance);
-    } catch (e) {
-      console.error("Audio Playback Error:", e);
-    }
-  };
-
-  const createStatusString = (voice) => {
-    return `(Lang: ${voice.lang}, Local: ${voice.localService})`;
-  };
-
-  // 4. Handle Async Voice Loading with Timeout Fallback
-  if (window.speechSynthesis.getVoices().length !== 0) {
-    play();
-  } else {
-    let fired = false;
-
-    // Success handler
-    window.speechSynthesis.onvoiceschanged = () => {
-      if (fired) return;
-      fired = true;
-      window.speechSynthesis.onvoiceschanged = null;
-      play();
+    // Error handling
+    utterance.onerror = (event) => {
+      console.error("Speech synthesis error:", event.error);
+      // Retry once on error
+      if (event.error === 'interrupted' || event.error === 'canceled') {
+        setTimeout(() => {
+          window.speechSynthesis.speak(utterance);
+        }, 100);
+      }
     };
 
-    // Timeout fallback (fix for Mac/Safari hanging)
-    setTimeout(() => {
-      if (fired) return;
-      fired = true;
-      window.speechSynthesis.onvoiceschanged = null;
-      console.warn("⚠️ Voice loading timed out, playing with default voice.");
-      play();
-    }, 1000); // 1 second timeout
+    utterance.onstart = () => {
+      console.log("🗣️ Speaking:", text.substring(0, 50) + "...");
+    };
+
+    window.speechSynthesis.speak(utterance);
+
+  } catch (e) {
+    console.error("Audio Playback Error:", e);
   }
 };
 
