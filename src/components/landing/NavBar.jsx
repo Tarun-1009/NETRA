@@ -5,6 +5,26 @@ import './Navbar.css';
 function NavBar() {
     const navigate = useNavigate();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isVisible, setIsVisible] = useState(true);
+    const [lastScrollY, setLastScrollY] = useState(0);
+
+    React.useEffect(() => {
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY;
+
+            if (currentScrollY > lastScrollY && currentScrollY > 50) {
+                // Scrolling down & past threshold -> Hide
+                setIsVisible(false);
+            } else {
+                // Scrolling up -> Show
+                setIsVisible(true);
+            }
+            setLastScrollY(currentScrollY);
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [lastScrollY]);
 
     const handleJoinClick = () => {
         navigate('/vision');
@@ -16,7 +36,7 @@ function NavBar() {
     };
 
     return (
-        <nav className="navbar">
+        <nav className={`navbar ${isVisible ? '' : 'hidden'}`}>
             <div className="navbar-logo">
                 <span className="logo-text">NETRA</span>
             </div>

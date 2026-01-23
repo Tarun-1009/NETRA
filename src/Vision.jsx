@@ -40,10 +40,10 @@ const Vision = () => {
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    
+
     // Save the image
     const base64Image = saveImageToGallery(canvas);
-    const text= await apireq(base64Image);
+    const text = await apireq(base64Image);
     speakText(text);
   };
 
