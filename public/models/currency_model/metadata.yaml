@@ -1,0 +1,29 @@
+description: Ultralytics YOLO26n model trained on /content/indian-currency/notes-4/data.yaml
+author: Ultralytics
+date: '2026-01-23T06:04:14.573295'
+version: 8.4.7
+license: AGPL-3.0 License (https://ultralytics.com/license)
+docs: https://docs.ultralytics.com
+stride: 32
+task: detect
+batch: 1
+imgsz:
+- 640
+- 640
+names:
+  0: '10'
+  1: '100'
+  2: '20'
+  3: '200'
+  4: '2000'
+  5: '5'
+  6: '50'
+  7: '500'
+  8: None
+args:
+  batch: 1
+  half: false
+  int8: false
+  nms: false
+channels: 3
+end2end: true
