@@ -18,38 +18,68 @@ export const speakText = (text) => {
 
   // 2. Create Utterance
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = 1.0;  // Slightly faster/normal
+  utterance.rate = 1.0;
   utterance.pitch = 1.0;
-  utterance.volume = 1.0; // MAX is 1.0, not 3.0
+  utterance.volume = 1.0;
 
-  // 3. Robust Voice Selection
-  const setVoice = () => {
+  // 3. Helper to Set Voice and Speak
+  const play = () => {
     const voices = window.speechSynthesis.getVoices();
 
-    // Priority: Hindi -> Indian English -> Default English -> Any
+    // Helper to find voice with optional local preference
+    const findVoice = (lang, forceLocal) => {
+      return voices.find(v => v.lang === lang && (!forceLocal || v.localService));
+    };
+
+    // Priority: Local voices first (for offline support), then any matching voice
     const preferredVoice =
-      voices.find(v => v.lang === 'hi-IN') ||
-      voices.find(v => v.lang === 'en-IN') ||
-      voices.find(v => v.lang === 'en-US');
+      findVoice('hi-IN', true) ||
+      findVoice('en-IN', true) ||
+      findVoice('en-US', true) ||
+      findVoice('hi-IN', false) ||
+      findVoice('en-IN', false) ||
+      findVoice('en-US', false);
 
     if (preferredVoice) {
       utterance.voice = preferredVoice;
-      console.log("🗣️ Voice set to:", preferredVoice.name);
+      console.log("🗣️ Voice set to:", preferredVoice.name, createStatusString(preferredVoice));
     } else {
       console.warn("⚠️ No specific voice found, using system default.");
     }
 
-    window.speechSynthesis.speak(utterance);
+    try {
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      console.error("Audio Playback Error:", e);
+    }
   };
 
-  // 4. Handle Async Voice Loading (Critical for Mac/Chrome first load)
-  if (window.speechSynthesis.getVoices().length === 0) {
-    window.speechSynthesis.onvoiceschanged = () => {
-      window.speechSynthesis.onvoiceschanged = null; // Clean listener
-      setVoice();
-    };
+  const createStatusString = (voice) => {
+    return `(Lang: ${voice.lang}, Local: ${voice.localService})`;
+  };
+
+  // 4. Handle Async Voice Loading with Timeout Fallback
+  if (window.speechSynthesis.getVoices().length !== 0) {
+    play();
   } else {
-    setVoice();
+    let fired = false;
+
+    // Success handler
+    window.speechSynthesis.onvoiceschanged = () => {
+      if (fired) return;
+      fired = true;
+      window.speechSynthesis.onvoiceschanged = null;
+      play();
+    };
+
+    // Timeout fallback (fix for Mac/Safari hanging)
+    setTimeout(() => {
+      if (fired) return;
+      fired = true;
+      window.speechSynthesis.onvoiceschanged = null;
+      console.warn("⚠️ Voice loading timed out, playing with default voice.");
+      play();
+    }, 1000); // 1 second timeout
   }
 };
 
