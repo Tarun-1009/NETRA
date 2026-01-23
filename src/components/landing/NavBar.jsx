@@ -22,7 +22,9 @@ function NavBar() {
             </div>
 
             <div className={`navbar-toggle ${isMenuOpen ? 'active' : ''}`} onClick={toggleMenu}>
-               
+                <div className="bar"></div>
+                <div className="bar"></div>
+                <div className="bar"></div>
             </div>
 
             <div className={`navbar-menu-container ${isMenuOpen ? 'active' : ''}`}>
