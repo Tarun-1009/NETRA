@@ -6,73 +6,92 @@ import {
     env 
 } from '@huggingface/transformers';
 
-// Configuration
+// 1. CONFIGURATION
 env.allowLocalModels = false;
 env.useBrowserCache = true;
 
 const MODEL_ID = 'onnx-community/Florence-2-base-ft';
 
-// Singleton state
 let model = null;
 let processor = null;
 let tokenizer = null;
 
-// Exported check function
+// Helper to check status
 export const isBrainReady = () => model !== null;
 
 /**
- * Loads the AI Model into memory
+ * LOAD BRAIN (No changes here, just ensures it's loaded)
  */
 export const loadOfflineBrain = async (onProgress) => {
     if (model) return;
-
+    console.log("📥 Starting Offline Brain Load...");
     try {
-        console.log("📥 Loading Florence-2...");
-        const device = 'wasm'; // CPU fallback for stability
-        
         model = await Florence2ForConditionalGeneration.from_pretrained(MODEL_ID, {
-            device,
             dtype: "q4",
-            progress_callback: (d) => {
-                if (d.status === 'progress' && onProgress) onProgress(Math.round(d.progress));
+            device: 'wasm', 
+            progress_callback: (data) => {
+                if (data.status === 'progress' && onProgress) {
+                    onProgress(Math.round(data.progress || 0));
+                }
             }
         });
-
         processor = await AutoProcessor.from_pretrained(MODEL_ID);
         tokenizer = await AutoTokenizer.from_pretrained(MODEL_ID);
-        console.log("✅ Offline Brain Ready");
+        console.log("🚀 Offline Brain is READY!");
     } catch (err) {
-        console.error("❌ Model Load Failed:", err);
+        console.error("❌ Brain Load Failed:", err);
+        throw err;
     }
 };
 
 /**
- * Processes image. If question exists, performs VQA.
+ * ASK BRAIN (Updated to accept Base64 directly)
  */
-export const askOfflineBrain = async (imageBlob, question = null) => {
-    if (!model) throw new Error("Offline brain not loaded yet.");
+export const askOfflineBrain = async (base64Image, question = null) => {
+    if (!model) return "Model loading...";
 
-    const image = await RawImage.fromURL(URL.createObjectURL(imageBlob));
+    console.log("🧠 Offline Brain: Starting Inference...");
+    const start = performance.now();
 
-    // LOGIC SWITCH:
-    // If Question -> Use Phrase Grounding (Good for specific answers)
-    // If No Question -> Use Detailed Caption (Good for general scanning)
-    const task = question ? '<CAPTION_TO_PHRASE_GROUNDING>' : '<MORE_DETAILED_CAPTION>';
-    const prompt = question ? `${task} ${question}` : task;
+    try {
+        // 1. Direct Base64 Loading (Fixes the Blob/URL crash)
+        const image = await RawImage.fromURL(base64Image);
 
-    const inputs = await processor(image, prompt);
+        // 2. Define Task
+        const task = question ? '<CAPTION_TO_PHRASE_GROUNDING>' : '<MORE_DETAILED_CAPTION>';
+        const prompt = question ? `${task} ${question}` : task;
+        console.log(`Task: ${task}`);
 
-    const generated_ids = await model.generate({
-        ...inputs,
-        max_new_tokens: 100,
-        num_beams: 1, // Keep at 1 for speed
-        do_sample: false,
-    });
+        // 3. Pre-process
+        const inputs = await processor(image, prompt);
 
-    const generated_text = tokenizer.batch_decode(generated_ids, { skip_special_tokens: false })[0];
-    
-    // Post-process to get clean text
-    const result = processor.post_process_generation(generated_text, task, image.size);
+        // 4. Generate (With Timeout Protection)
+        console.log("⚙️ Running AI Model (This takes 5-15s on laptop CPU)...");
+        
+        // We race the generation against a 30s timeout
+        const generationPromise = model.generate({
+            ...inputs,
+            max_new_tokens: 100,
+            num_beams: 1,
+            do_sample: false,
+        });
 
-    return result[task];
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("Timeout")), 30000)
+        );
+
+        const generated_ids = await Promise.race([generationPromise, timeoutPromise]);
+
+        // 5. Decode
+        const generated_text = tokenizer.batch_decode(generated_ids, { skip_special_tokens: false })[0];
+        const result = processor.post_process_generation(generated_text, task, image.size);
+        
+        console.log(`✅ Done in ${((performance.now() - start) / 1000).toFixed(2)}s`);
+        return result[task];
+
+    } catch (err) {
+        console.error("❌ Offline Inference Error:", err);
+        if (err.message === "Timeout") return "AI took too long. Try again.";
+        return "Offline processing error.";
+    }
 };

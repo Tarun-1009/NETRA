@@ -186,38 +186,49 @@
   box-shadow: 0 0 30px rgba(255, 0, 0, 0.3);
 }
 
-/* Update this section in Vision.css */
+/* Container for the text input */
 .debug-input-container {
     position: absolute;
-    bottom: 85px; /* Sits nicely above the status text */
+    bottom: 100px; /* Moved up slightly to avoid thumb overlap */
     left: 50%;
     transform: translateX(-50%);
-    width: 90%;
+    width: 85%;
     max-width: 400px;
-    z-index: 20;
-    transition: all 0.3s ease;
+    z-index: 1000; /* CRITICAL: Forces it above the video/glow */
+    pointer-events: auto; /* CRITICAL: Ensures clicks register */
 }
 
+/* The actual input box */
 .debug-input-container input {
     width: 100%;
-    padding: 12px 20px;
-    border-radius: 30px;
-    border: 2px solid rgba(0, 255, 0, 0.5); /* High contrast green */
-    background: rgba(0, 0, 0, 0.85);
+    padding: 15px 20px;
+    border-radius: 50px;
+    border: 2px solid rgba(0, 255, 0, 0.6);
+    background: rgba(0, 0, 0, 0.9);
     color: #fff;
     font-size: 16px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     outline: none;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.8);
+    transition: all 0.2s ease;
 }
 
+/* Visual feedback when you click it */
 .debug-input-container input:focus {
     border-color: #00ff00;
-    box-shadow: 0 0 15px rgba(0, 255, 0, 0.4);
-    background: rgba(0, 0, 0, 0.95);
+    background: #000;
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+    transform: scale(1.05); /* slightly grow so you know it's active */
 }
 
-.debug-input-container input::placeholder {
-    color: rgba(255, 255, 255, 0.6);
-    font-style: italic;
+/* --- SCANNING VISUALS --- */
+.glow-frame.scanning {
+    border-color: #3b82f6; /* Blue */
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
+    animation: pulse-scan 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse-scan {
+    0% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
+    50% { box-shadow: 0 0 50px rgba(59, 130, 246, 0.6); }
+    100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
 }
