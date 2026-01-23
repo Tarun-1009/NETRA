@@ -8,7 +8,7 @@ import Hero from './components/landing/Hero';
 
 function App() {
   return <Router>
-    <NavBar/>
+    <NavBar />
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/vision" element={<Vision />} />
