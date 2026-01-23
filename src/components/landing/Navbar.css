@@ -2,67 +2,167 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 2rem;
-    background-color: #00000000;
+    padding: 1.5rem 5%;
+    background-color: transparent;
     color: #fff;
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
+    width: 100%;
     z-index: 1000;
+    box-sizing: border-box;
+    transition: transform 0.3s ease-in-out;
 }
 
+.navbar.hidden {
+    transform: translateY(-100%);
+}
 
 .navbar-logo {
-    font-size: 1.5rem;
-    font-weight: bold;
+    font-size: 1.8rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    z-index: 1001;
 }
 
+.logo-text {
+    background: linear-gradient(135deg, #00f2fe 0%, #008f82 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.navbar-menu-container {
+    display: flex;
+    align-items: center;
+    gap: 9rem;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
 
 .navbar-menu {
-    width: 50%;
-    height: 10%;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 1rem 2rem;
-    background-color: #1e616e0f;
-    color: #fff;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    border-radius: 2rem;
-    border: 1px solid #11353c37;
-}
-
-.navbar-item {
+    gap: 3rem;
+    padding: 0.8rem 2.5rem;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 100px;
     list-style: none;
+    margin: 0;
 }
 
-.link {
-    color: white;
+.navbar-item a {
     text-decoration: none;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.95rem;
+    font-weight: 500;
     transition: color 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
-.link:hover {
-    color: #00d5ff;
+.navbar-item a:hover {
+    color: #00f2fe;
 }
-
-/* Persistent Highlight state (Highlighter) */
-.active-link {
-    color: #5ce1ff;
-    /* Matches the light blue in your screenshot */
-    font-weight: bold;
-    border-bottom: 2px solid #5ce1ff;
-    /* Optional: adds a visual underline indicator */
-}
-
 
 .navbar-btn {
-    background-color: #1c515b60;
-    color: #fff;
+    background: linear-gradient(135deg, #00f2fe 0%, #008f82 100%);
+    color: white;
     border: none;
-    width: 80px;
-    height: 40px;
-    border-radius: 2rem;
+    padding: 0.8rem 1.8rem;
+    border-radius: 100px;
+    font-weight: 700;
     cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 143, 130, 0.3);
+}
+
+.navbar-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 143, 130, 0.5);
+}
+
+/* Mobile Toggle */
+.navbar-toggle {
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    cursor: pointer;
+    z-index: 1001;
+    padding: 10px;
+}
+
+.navbar-toggle .bar {
+    width: 30px;
+    height: 2px;
+    background-color: white;
+    transition: all 0.3s ease;
+}
+
+@media (max-width: 992px) {
+    .navbar-menu {
+        gap: 1.5rem;
+        padding: 0.8rem 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .navbar-toggle {
+        display: flex;
+    }
+
+    .navbar-toggle.active .bar:nth-child(1) {
+        transform: translateY(8px) rotate(45deg);
+    }
+
+    .navbar-toggle.active .bar:nth-child(2) {
+        opacity: 0;
+    }
+
+    .navbar-toggle.active .bar:nth-child(3) {
+        transform: translateY(-8px) rotate(-45deg);
+    }
+
+    .navbar-menu-container {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        width: 100%;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.95);
+        backdrop-filter: blur(20px);
+        flex-direction: column;
+        justify-content: center;
+        gap: 3rem;
+        z-index: 1000;
+        padding-top: 50px;
+    }
+
+    .navbar-menu-container.active {
+        right: 0;
+    }
+
+    .navbar-menu {
+        flex-direction: column;
+        background: transparent;
+        border: none;
+        backdrop-filter: none;
+        gap: 2.5rem;
+        width: 100%;
+        text-align: center;
+    }
+
+    .navbar-item a {
+        font-size: 1.8rem;
+        font-weight: 600;
+        color: white;
+    }
+
+    .navbar-btn {
+        width: 80%;
+        max-width: 300px;
+        font-size: 1.1rem;
+        padding: 1rem 2rem;
+    }
 }

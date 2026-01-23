@@ -6,94 +6,141 @@ import {
     env
 } from '@huggingface/transformers';
 
-// ---------------- CONFIGURATION ----------------
-// Disable local file checks (we fetch from web)
-env.allowLocalModels = false;
-// Enable caching (so it works offline after 1st run)
+// 1. CONFIGURATION
+env.allowLocalModels = false; // Keep false to force download/cache consistency
 env.useBrowserCache = true;
 
-// The Model ID: Fine-tuned Florence-2 (ONNX version)
 const MODEL_ID = 'onnx-community/Florence-2-base-ft';
 
-// Singleton variables to hold the loaded brain
-let model = null;
-let processor = null;
-let tokenizer = null;
+// GLOBAL SINGLETON PATTERN (Prevents OOM during HMR/Relies)
+// Vite HMR re-runs this file, causing multiple model loads -> Memory Crash.
+// We store instances on window to persist them.
+if (!window.netraBrain) {
+    window.netraBrain = {
+        model: null,
+        processor: null,
+        tokenizer: null,
+        loading: false
+    };
+}
 
-export const isBrainReady = () => model !== null;
+// Helper to check status
+export const isBrainReady = () => window.netraBrain.model !== null;
 
 /**
- * 1. THE LOADER
- * Downloads the model (~150MB in q4 mode).
- * Tracks progress for your UI bar.
+ * LOAD BRAIN (Modified for Singleton Safety)
  */
 export const loadOfflineBrain = async (onProgress) => {
-    if (model) return; // Stop if already loaded
+    // 1. If ready, stop.
+    if (window.netraBrain.model) {
+        console.log("🧠 Offline Brain already loaded (from memory).");
+        return;
+    }
 
-    console.log("📥 Initializing Florence-2 (Turbo Mode)...");
+    // 2. If loading, wait/attach (simple debounce)
+    if (window.netraBrain.loading) {
+        console.log("⚠️ Brain is already loading...");
+        return;
+    }
+
+    window.netraBrain.loading = true;
+    console.log("📥 Starting Offline Brain Load...");
 
     try {
-        // A. Check for WebGPU (Graphics Card support)
-        // If browser supports it, it's 10x faster. If not, fallback to CPU (wasm).
-        const device = navigator.gpu ? 'webgpu' : 'wasm';
-        console.log(`🚀 Accelerator: ${device.toUpperCase()}`);
-
-        // B. Load the AI Model
-        model = await Florence2ForConditionalGeneration.from_pretrained(MODEL_ID, {
-            device: device,
-            dtype: "q4",    // <--- SPEED TRICK: 4-bit mode (Smaller & Faster)
+        const model = await Florence2ForConditionalGeneration.from_pretrained(MODEL_ID, {
+            dtype: "q4",
+            device: 'wasm',
             progress_callback: (data) => {
-                // Send download % back to the UI
                 if (data.status === 'progress' && onProgress) {
-                    onProgress(Math.round(data.progress));
+                    onProgress(Math.round(data.progress || 0));
                 }
             }
         });
+        const processor = await AutoProcessor.from_pretrained(MODEL_ID);
+        const tokenizer = await AutoTokenizer.from_pretrained(MODEL_ID);
 
-        // C. Load Helper Tools (Processor & Tokenizer)
-        processor = await AutoProcessor.from_pretrained(MODEL_ID);
-        tokenizer = await AutoTokenizer.from_pretrained(MODEL_ID);
+        // Save to global singleton
+        window.netraBrain.model = model;
+        window.netraBrain.processor = processor;
+        window.netraBrain.tokenizer = tokenizer;
+        window.netraBrain.loading = false;
 
-        console.log("✅ Offline Brain Ready!");
-
+        console.log("🚀 Offline Brain is READY!");
     } catch (err) {
+        window.netraBrain.loading = false;
         console.error("❌ Brain Load Failed:", err);
-        throw new Error("Failed to load AI model. Check internet.");
+        throw err;
     }
 };
 
+
 /**
- * 2. THE THINKER
- * Takes an image -> Returns text.
+ * ASK BRAIN (Updated to accept Base64 directly)
  */
-export const askOfflineBrain = async (imageBlob) => {
-    if (!model) throw new Error("Brain not loaded.");
+export const askOfflineBrain = async (base64Image, question = null) => {
+    const model = window.netraBrain?.model;
+    const processor = window.netraBrain?.processor;
+    const tokenizer = window.netraBrain?.tokenizer;
 
-    // A. Prepare Image
-    const image = await RawImage.fromURL(URL.createObjectURL(imageBlob));
+    if (!model) return "Model loading...";
 
-    // B. Define the Task
-    // <MORE_DETAILED_CAPTION> is the sweet spot between "Too Short" and "Too Slow"
-    const task = '<MORE_DETAILED_CAPTION>';
-    const prompt = task;
+    console.log("🧠 Offline Brain: Starting Inference...");
+    const start = performance.now();
 
-    // C. Pre-process
-    const inputs = await processor(image, prompt);
+    try {
+        // 1. Direct Base64 Loading (Fixes the Blob/URL crash)
+        const image = await RawImage.fromURL(base64Image);
 
-    // D. Generate (The Heavy Math)
-    const generated_ids = await model.generate({
-        ...inputs,
-        max_new_tokens: 100, // Max words to speak
-        num_beams: 1,        // <--- SPEED TRICK: 1 Beam = Fast. (Don't overthink)
-        do_sample: false,    // Be factual, don't guess.
-    });
+        // 2. Define Task
+        const task = question ? '<CAPTION_TO_PHRASE_GROUNDING>' : '<MORE_DETAILED_CAPTION>';
+        const prompt = question ? `${task} ${question}` : task;
+        console.log(`Task: ${task}`);
 
-    // E. Decode Numbers -> Text
-    const generated_text = tokenizer.batch_decode(generated_ids, { skip_special_tokens: false })[0];
+        // 3. Pre-process
+        const inputs = await processor(image, prompt);
 
-    // F. Clean up the result
-    const result = processor.post_process_generation(generated_text, task, image.size);
+        // 4. Generate (With Timeout Protection)
+        console.log("⚙️ Running AI Model (This takes 5-15s on laptop CPU)...");
 
-    // Return the final clean string
-    return `Offline Mode: ${result[task]}`;
+        // We race the generation against a 30s timeout
+        const generationPromise = model.generate({
+            ...inputs,
+            max_new_tokens: 100,
+            num_beams: 1,
+            do_sample: false,
+        });
+
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Timeout")), 30000)
+        );
+
+        const generated_ids = await Promise.race([generationPromise, timeoutPromise]);
+
+        // 5. Decode
+        const generated_text = tokenizer.batch_decode(generated_ids, { skip_special_tokens: false })[0];
+        const result = processor.post_process_generation(generated_text, task, image.size);
+
+        console.log(`✅ Done in ${((performance.now() - start) / 1000).toFixed(2)}s`);
+
+        let finalOutput = result[task];
+
+        // 6. Parse structured data (Bounding Boxes) into Speakable Text
+        if (typeof finalOutput === 'object' && finalOutput.bboxes) {
+            const labels = finalOutput.labels || [];
+            if (labels.length > 0) {
+                // Create a Hinglish sentence: "Keys, Wallet dikh raha hai."
+                const uniqueItems = [...new Set(labels)];
+                finalOutput = `Samne ${uniqueItems.join(', ')} dikh raha hai.`;
+            } else {
+                finalOutput = "Woh cheez nahi mili, fir se try karo.";
+            }
+        }
+
+        return finalOutput;
+
+    } catch (err) {
+        console.error("❌ Offline Inference Error:", err);
+        if (err.message === "Timeout") return "AI took too long. Try again.";
+        return "Offline processing error.";
+    }
 };

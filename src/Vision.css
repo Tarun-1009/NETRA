@@ -16,38 +16,44 @@
 .app-container {
     height: 100vh;
     width: 100vw;
-    background: var(--bg);
+    /* background: var(--bg); */
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     overflow: hidden;
     font-family: 'Inter', sans-serif;
-    padding: 20px;
+    padding: 40px;
+    margin-top: 10%;
     gap: 24px;
 }
 
 .glow-frame {
     width: 100%;
     max-width: 1200px;
-    aspect-ratio: 16 / 9;
+    aspect-ratio: auto;
     position: relative;
     border-radius: 16px;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgb(255, 255, 255);
+    box-shadow: 0 8px 32px rgb(0, 170, 255);
     transition: all 0.3s ease;
 }
 
 .glow-frame:hover {
     border-color: var(--primary);
-    box-shadow: 0 8px 48px rgba(99, 102, 241, 0.2);
+    box-shadow: 0 8px 32px rgba(142, 241, 99, 0.943);
 }
 
 #video-feed {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    /* Removed scaleX(-1) to fix mirrored back camera on mobile */
+}
+
+/* Mirror effect for front-facing cameras (desktop webcams) */
+#video-feed.mirror {
     transform: scaleX(-1);
 }
 
@@ -70,6 +76,20 @@
     font-weight: 600;
     color: var(--text);
     letter-spacing: 0.5px;
+    display: none;
+    /* Hide logo from camera feed */
+}
+
+.status-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.progress-text {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: monospace;
 }
 
 .status-badge {
@@ -107,114 +127,111 @@
     }
 }
 
-/* Minimal bottom info */
-.bottom-info {
+/* --- BOTTOM CONTROLS (New Layout) --- */
+.bottom-controls {
     position: absolute;
     bottom: 0;
     left: 0;
-    right: 0;
-    padding: 20px 24px;
+    width: 100%;
+    padding: 20px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 10%, rgba(0, 0, 0, 0.6) 60%, transparent 100%);
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 12px;
     align-items: center;
-    background: linear-gradient(0deg, rgba(0, 0, 0, 0.6) 0%, transparent 100%);
-    z-index: 10;
+    z-index: 100;
+    pointer-events: auto;
+    /* Ensure clicks work */
 }
 
-.info-text {
-    font-size: 13px;
-    color: var(--text-muted);
-    font-weight: 400;
+.control-row {
+    display: flex;
+    width: 100%;
+    max-width: 600px;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
 }
 
-.info-value {
-    color: var(--text);
-    font-weight: 500;
-    margin-left: 8px;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .app-container {
-        padding: 12px;
-    }
-
-    .glow-frame {
-        aspect-ratio: 4 / 3;
-    }
-
-    .top-bar,
-    .bottom-info {
-        padding: 16px;
-    }
-
-    .logo-text {
-        font-size: 16px;
-    }
-}
-
-#apitestbutton {
-    position: absolute;
-    top: 80px;
-    right: 24px;
-    padding: 8px 16px;
-    background-color: var(--primary);
-    color: var(--text);
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
+.ocr-button {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    color: white;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    transition: background-color 0.3s ease;
-    z-index: 20;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
 }
 
-#ocrButton {
-    position: absolute;
-    top: 130px;
-    /* Positioned below the API button */
-    right: 24px;
-    padding: 10px 20px;
-    background-color: rgba(0, 229, 255, 0.8);
-    /* Glass-like cyan */
-    color: #fff;
+.ocr-button:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
+}
+
+.ocr-button:active {
+    transform: scale(0.95);
+}
+
+.input-form {
+    flex-grow: 1;
+    display: flex;
+}
+
+.input-form input {
+    width: 100%;
+    padding: 12px 20px;
+    border-radius: 25px;
     border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(5px);
-    border-radius: 8px;
-    font-size: 14px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    z-index: 20;
+    color: #fff;
+    font-size: 16px;
+    outline: none;
+    transition: all 0.2s ease;
 }
 
-#ocrButton:hover {
-    background-color: rgba(0, 229, 255, 1);
-    box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+.input-form input:focus {
+    border-color: var(--primary);
+    background: rgba(0, 0, 0, 0.8);
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
 }
 
+.bottom-info-text {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+}
+
+/* Glass Message (Toast) */
 .glass-message {
     position: fixed;
-    bottom: 120px;
+    bottom: 140px;
+    /* Above the controls */
     left: 50%;
     transform: translateX(-50%);
     background: rgba(0, 0, 0, 0.85);
-    /* Slightly darker for better contrast */
-    border: 1px solid rgba(0, 229, 255, 0.3);
-    /* Cyan tint border */
+    border: 1px solid rgba(99, 102, 241, 0.3);
     padding: 16px 32px;
     border-radius: 30px;
     color: #ffffff;
-    font-size: 1.2rem;
-    font-weight: 600;
+    font-size: 1.1rem;
+    font-weight: 500;
     text-align: center;
     max-width: 90%;
     z-index: 9999;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
     animation: fadeSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     pointer-events: none;
-    /* Let clicks pass through */
 }
 
 @keyframes fadeSlideUp {
@@ -226,5 +243,134 @@
     to {
         opacity: 1;
         transform: translate(-50%, 0) scale(1);
+    }
+}
+
+/* Listening State - Red Pulse */
+.status-dot.listening {
+    background-color: #ef4444;
+    /* Red-500 */
+    box-shadow: 0 0 15px #ef4444;
+    animation: pulse-red 0.5s infinite;
+}
+
+@keyframes pulse-red {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.5;
+        transform: scale(1.2);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.glow-frame.listening {
+    border-color: #ef4444;
+    box-shadow: 0 0 30px rgba(239, 68, 68, 0.3);
+}
+
+/* Scanning State - Blue Pulse */
+.glow-frame.scanning {
+    border-color: #3b82f6;
+    /* Blue-500 */
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
+    animation: pulse-scan 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse-scan {
+    0% {
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 0 50px rgba(59, 130, 246, 0.6);
+    }
+
+    100% {
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+    }
+}
+
+
+/* --- RESPONSIVE MEDIA QUERIES --- */
+
+/* Tablet */
+@media (max-width: 1024px) {
+    .glow-frame {
+        max-width: 90%;
+    }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .app-container {
+        padding: 0;
+        gap: 0;
+        background: black;
+    }
+
+    .glow-frame {
+        width: 100%;
+        height: 100dvh;
+        /* Dynamic Viewport Height */
+        max-width: 100%;
+        border-radius: 0;
+        border: none;
+        box-shadow: none;
+        aspect-ratio: auto;
+        /* Reset aspect ratio for full screen */
+    }
+
+    .top-bar {
+        padding: 16px;
+        background: linear-gradient(180deg, rgba(0, 0, 0, 0.8) 0%, transparent 100%);
+    }
+
+    .logo-text {
+        font-size: 16px;
+    }
+
+    /* Adjust controls for mobile touch targets */
+    .bottom-controls {
+        padding: 24px 16px;
+        /* Slightly more padding for touch safety from bottom edge */
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 20%, rgba(0, 0, 0, 0.0) 100%);
+    }
+
+    .control-row {
+        gap: 12px;
+    }
+
+    .ocr-button {
+        width: 48px;
+        height: 48px;
+    }
+
+    .input-form input {
+        font-size: 16px;
+        /* Prevents auto-zoom on iOS */
+        padding: 14px 20px;
+    }
+
+    .glass-message {
+        bottom: 120px;
+        /* Adjust for control bar height */
+        font-size: 1rem;
+        width: 80%;
+    }
+}
+
+/* Small Mobile */
+@media (max-width: 480px) {
+    .bottom-info-text {
+        font-size: 11px;
+        opacity: 0.8;
     }
 }

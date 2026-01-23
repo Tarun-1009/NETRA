@@ -1,26 +1,51 @@
 import React, { useEffect, useRef, useState } from 'react';
-import "./Vision.css";
 
 // Services
 import { apireq } from "./services/apihandling";
-import { saveImageToGallery, speakText } from "./services/utils";
+import { loadOfflineBrain, askOfflineBrain } from "./services/BrainManager";
+import { speakText } from "./services/utils";
 import { readTextOCRSpace } from "./services/OcrSpaceService";
 import { playClick, playSuccess, playError } from './services/sound';
-import { askOfflineBrain } from "./services/BrainManager";
 
 // Components
 import SetupScreen from "./components/vision/SetupScreen";
+import "./Vision.css";
 
 const Vision = () => {
+  // --- Refs & State ---
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [resolution, setResolution] = useState('Initializing...');
   const [overlayText, setOverlayText] = useState('');
   const [isReady, setIsReady] = useState(false); // Controls Setup Screen
+  const [hasInteracted, setHasInteracted] = useState(false); // Track first user interaction
+  const [queuedMessage, setQueuedMessage] = useState(null); // Queue message until interaction
+  const [isFrontCamera, setIsFrontCamera] = useState(false); // Track camera type for mirroring
+
+  // AI State
+  const [isOfflineReady, setIsOfflineReady] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0); // 0-100%
+
+  // Interaction State
+  const [isListening, setIsListening] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [textQuestion, setTextQuestion] = useState("");
+
+  // Logic Refs
+  const longPressTimer = useRef(null);
+  const isHolding = useRef(false);
+  const recognitionRef = useRef(null);
 
   // Wrapper to speak and show text
-  const announce = (text) => {
-    speakText(text);
+  const announce = async (text) => {
+    // If user hasn't interacted yet, queue the message
+    if (!hasInteracted) {
+      setQueuedMessage(text);
+      setOverlayText(text);
+      return;
+    }
+
+    await speakText(text);
     setOverlayText(text);
 
     // Calculate duration: ~3 words per second, minimum 5s, max 15s.
@@ -31,6 +56,7 @@ const Vision = () => {
     window.overlayTimer = setTimeout(() => setOverlayText(''), duration);
   };
 
+  // --- 1. INITIALIZATION ---
   useEffect(() => {
     // Only initialize camera once "Ready" (after Setup Screen)
     if (!isReady) return;
@@ -55,15 +81,20 @@ const Vision = () => {
           const videoTrack = stream.getVideoTracks()[0];
           const settings = videoTrack.getSettings();
           setResolution(`${settings.width}x${settings.height}`);
-          console.log(`✅ Camera ready: ${settings.width}x${settings.height}`);
 
-          // Speak welcome
+          // Detect camera facing mode for mirroring
+          const facingMode = settings.facingMode;
+          const isFront = facingMode === 'user' || !facingMode; // 'user' = front camera, undefined = desktop webcam
+          setIsFrontCamera(isFront);
+          console.log(`✅ Camera ready: ${settings.width}x${settings.height}, Facing: ${facingMode || 'user (default)'}, Mirror: ${isFront}`);
+
+          // Queue welcome message (will play on first interaction)
           if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-          speakText("Netra is online. Tap anywhere to scan.");
+          announce("Netra is online. Tap anywhere to scan.");
         }
       } catch (err) {
         console.error("❌ Error accessing camera:", err);
-        speakText("Camera access failed. Please check permissions.");
+        announce("Camera access failed. Please check permissions.");
         setResolution("Camera Error");
       }
     };
@@ -77,36 +108,113 @@ const Vision = () => {
     };
   }, [isReady]);
 
-  // Main Object/Scene Detection
-  const handleScan = async () => {
+  // --- 2. OFFLINE BRAIN & KEYBOARD EVENTS ---
+  useEffect(() => {
+    // Load Offline Brain (Background)
+    loadOfflineBrain((percent) => {
+      setLoadingProgress(percent);
+    }).then(() => {
+      console.log("Offline Brain Ready!");
+      setIsOfflineReady(true);
+    }).catch(err => {
+      console.error("Offline Brain Load Error:", err);
+      // Optional: set a state to show error
+      setLoadingProgress("Error");
+    });
+
+    // Keyboard Shortcuts (Spacebar to Talk)
+    const handleKeyDown = (e) => {
+      // Prevent triggering if typing in text box
+      if (e.code === 'Space' && !isHolding.current && document.activeElement.tagName !== 'INPUT') {
+        isHolding.current = true;
+        startListening();
+      }
+    };
+    const handleKeyUp = (e) => {
+      if (e.code === 'Space' && document.activeElement.tagName !== 'INPUT') {
+        endListening();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
+
+  // --- 3. CORE PROCESSING LOGIC ---
+  const handleProcess = async (question = null) => {
+    // Mark first interaction
+    if (!hasInteracted) {
+      setHasInteracted(true);
+      // Play queued message if any
+      if (queuedMessage) {
+        await speakText(queuedMessage);
+        setQueuedMessage(null);
+      }
+    }
+
     playClick();
-    if (!videoRef.current || !canvasRef.current) return;
+    setIsScanning(true);
 
-    const video = videoRef.current;
     const canvas = canvasRef.current;
+    const video = videoRef.current;
 
-    // Set canvas dimensions to match video
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    // Save the image
-    const base64Image = saveImageToGallery(canvas);
+    if (!video || !canvas) {
+      setIsScanning(false);
+      return;
+    }
 
     try {
-      // 1. Try Gemini API
-      const text = await apireq(base64Image);
+      // Capture Image
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const base64 = canvas.toDataURL('image/jpeg');
+
+      let textResponse = "";
+      console.log(`Processing... Mode: ${navigator.onLine ? "Online" : "Offline"}, Question: ${question}`);
+
+      // A. Online Mode (Gemini)
+      if (navigator.onLine) {
+        textResponse = await apireq(base64, question);
+
+        // CHECK FOR API FAILURE (Fallback to Offline)
+        if (textResponse.includes("Connection error") || textResponse.startsWith("Error")) {
+          console.warn("Online API failed. Attempting Offline Fallback...");
+          if (isOfflineReady) {
+            await speakText("Switching to offline mode.");
+            textResponse = await askOfflineBrain(base64, question);
+          } else {
+            textResponse += " Offline brain not ready.";
+          }
+        }
+      }
+      // B. Offline Mode (Direct Check)
+      else if (isOfflineReady) {
+        textResponse = await askOfflineBrain(base64, question);
+      }
+      // C. Fallback
+      else {
+        textResponse = `Offline model loading... ${loadingProgress}%`;
+      }
+
+      console.log("AI Response:", textResponse);
       playSuccess();
-      announce(text);
+      announce(textResponse);
+      setTextQuestion(""); // Clear input on success
+
     } catch (error) {
       console.warn("Gemini API failed, falling back to Florence-2...", error);
 
       try {
-        // 2. Fallback to Offline Brain (Florence-2)
-        // Convert canvas to blob for Florence-2
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
-        const offlineText = await askOfflineBrain(blob);
+        // Fallback to Offline Brain (Florence-2)
+        const offlineBase64 = canvas.toDataURL('image/jpeg');
+        const offlineText = await askOfflineBrain(offlineBase64);
 
         playSuccess();
         announce(offlineText);
@@ -115,14 +223,14 @@ const Vision = () => {
         playError();
         announce("I'm sorry, I couldn't understand the image.");
       }
+    } finally {
+      setIsScanning(false); // END VISUAL FEEDBACK
     }
   };
 
-  // Text Reading (OCR)
+  // --- 4. TEXT READING (OCR) ---
   const handleOCR = async (e) => {
-    // Prevent event bubbling if button is inside a clickable div (though it isn't here)
     if (e) e.stopPropagation();
-
     if (!videoRef.current) return;
 
     playClick();
@@ -144,25 +252,102 @@ const Vision = () => {
     }
   };
 
+  // --- 5. VOICE LOGIC ---
+  const startListening = async () => {
+    setIsListening(true);
+
+    // Stop any current speech
+    window.speechSynthesis.cancel();
+    if (recognitionRef.current) recognitionRef.current.abort();
+
+    // Check Browser Support
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      await speakText("Voice not supported. Use text box.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => console.log("🎤 Mic Active");
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      console.log("Heard:", transcript);
+      handleProcess(transcript);
+      setIsListening(false);
+    };
+
+    recognition.onerror = async (event) => {
+      console.error("Speech Error:", event.error);
+      setIsListening(false);
+      isHolding.current = false; // Reset holding state
+
+      if (event.error === 'network') {
+        await speakText("Browser blocked voice. Please use text box.");
+      } else if (event.error === 'not-allowed') {
+        await speakText("Microphone permission denied.");
+      }
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      isHolding.current = false;
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  };
+
+  const endListening = () => {
+    clearTimeout(longPressTimer.current);
+    // Small delay to prevent accidental clicks
+    setTimeout(() => { isHolding.current = false; }, 300);
+  };
+
+  // --- 6. RENDER ---
   // Show Setup Screen first
   if (!isReady) {
     return <SetupScreen onComplete={() => setIsReady(true)} />;
   }
 
-  return (
-    <div className="app-container">
-      <div className="glow-frame">
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          id="video-feed"
-          onClick={handleScan}
-        />
 
-        <button onClick={apireq} id="apitestbutton">API</button>
-        <button onClick={handleOCR} id="ocrButton">Read Text</button>
+  return (
+    <div className="app-container"
+      // Mouse/Touch Events for "Hold to Speak"
+      onMouseDown={() => {
+        if (document.activeElement.tagName !== 'INPUT') longPressTimer.current = setTimeout(startListening, 500);
+      }}
+      onMouseUp={endListening}
+      onTouchStart={() => {
+        if (document.activeElement.tagName !== 'INPUT') longPressTimer.current = setTimeout(startListening, 500);
+      }}
+      onTouchEnd={(e) => {
+        endListening();
+      }}
+
+      // Click Event for Standard Scan
+      onClick={() => {
+        if (!isHolding.current && !isListening && document.activeElement.tagName !== 'INPUT') handleProcess(null);
+      }}
+    >
+      <div className={`glow-frame ${isListening ? 'listening' : ''} ${isScanning ? 'scanning' : ''}`}>
+        <video ref={videoRef} autoPlay playsInline muted id="video-feed" className={isFrontCamera ? 'mirror' : ''} />
+        <canvas ref={canvasRef} style={{ display: 'none' }} />
+
+        {/* TOP BAR */}
+        <div className="top-bar">
+          <div className="logo-text">NETRA</div>
+          <div className="status-container">
+            <div className={`status-dot ${isListening ? 'listening' : (isOfflineReady ? 'ready' : 'loading')}`}></div>
+            {!isOfflineReady && loadingProgress !== 0 && (
+              <span className="progress-text">{loadingProgress}{typeof loadingProgress === 'number' ? '%' : ''}</span>
+            )}
+          </div>
+        </div>
 
         {/* Message Overlay */}
         {overlayText && (
@@ -171,19 +356,39 @@ const Vision = () => {
           </div>
         )}
 
-        {/* Hidden canvas for image capture */}
-        <canvas ref={canvasRef} style={{ display: 'none' }} />
+        {/* BOTTOM CONTROLS */}
+        <div className="bottom-controls"
+          onMouseDown={(e) => e.stopPropagation()}
+          onMouseUp={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="control-row">
+            <button
+              className="ocr-button"
+              onClick={handleOCR}
+              title="Read Text (OCR)"
+            >
+              📄
+            </button>
 
-        <div className="top-bar">
-          <div className="logo-text">NETRA</div>
-          <div className="status-badge">
-            <div className="status-dot"></div>
-            <span>Live</span>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              handleProcess(textQuestion);
+              document.activeElement.blur();
+            }} className="input-form">
+              <input
+                type="text"
+                placeholder="Ask a question..."
+                value={textQuestion}
+                onChange={(e) => setTextQuestion(e.target.value)}
+              />
+            </form>
           </div>
-        </div>
-        <div className="bottom-info">
-          <div className="info-text">
-            {resolution}
+
+          <div className="bottom-info-text">
+            {isListening ? "🔴 LISTENING..." : "Click to Scan • Hold Spacebar • Type"}
           </div>
         </div>
       </div>
