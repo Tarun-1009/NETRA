@@ -5,6 +5,7 @@ import About from './components/landing/About';
 import NavBar from './components/landing/NavBar';
 import Feature from './components/landing/Feature';
 import Hero from './components/landing/Hero';
+import Contact from './components/landing/Contact';
 
 function App() {
   return <Router>
@@ -15,7 +16,7 @@ function App() {
       <Route path="/about" element={<About />} />
       <Route path="/hero" element={<Hero />} />
       <Route path="/feature" element={<Feature />} />
-      <Route path="/contact" element={<div>Contact Page Coming Soon</div>} />
+      <Route path="/contact" element={<Contact />} />
     </Routes>
   </Router>
 }

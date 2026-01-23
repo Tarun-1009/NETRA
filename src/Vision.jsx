@@ -289,6 +289,7 @@ const Vision = () => {
     return <SetupScreen onComplete={() => setIsReady(true)} />;
   }
 
+
   return (
     <div className="app-container"
       // Mouse/Touch Events for "Hold to Speak"
@@ -316,21 +317,10 @@ const Vision = () => {
         <div className="top-bar">
           <div className="logo-text">NETRA</div>
           <div className="status-container">
-            {/* Status Dot */}
             <div className={`status-dot ${isListening ? 'listening' : (isOfflineReady ? 'ready' : 'loading')}`}></div>
-            {/* Download Percentage or Error */}
             {!isOfflineReady && loadingProgress !== 0 && (
               <span className="progress-text">{loadingProgress}{typeof loadingProgress === 'number' ? '%' : ''}</span>
             )}
-
-            {/* OCR Button - Added back from old version */}
-            <button
-              className="ocr-button-small"
-              onClick={handleOCR}
-              style={{ marginLeft: '10px', background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '5px' }}
-            >
-              OCR
-            </button>
           </div>
         </div>
 
@@ -341,32 +331,40 @@ const Vision = () => {
           </div>
         )}
 
-        {/* DEBUG TEXT INPUT */}
-        {/* The stopPropagation is CRITICAL here */}
-        <div className="debug-input-container"
+        {/* BOTTOM CONTROLS */}
+        <div className="bottom-controls"
           onMouseDown={(e) => e.stopPropagation()}
           onMouseUp={(e) => e.stopPropagation()}
           onTouchStart={(e) => e.stopPropagation()}
           onTouchEnd={(e) => e.stopPropagation()}
-          onClick={(e) => e.stopPropagation()}>
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="control-row">
+            <button
+              className="ocr-button"
+              onClick={handleOCR}
+              title="Read Text (OCR)"
+            >
+              📄
+            </button>
 
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            handleProcess(textQuestion);
-            document.activeElement.blur();
-          }}>
-            <input
-              type="text"
-              placeholder="Ask a question..."
-              value={textQuestion}
-              onChange={(e) => setTextQuestion(e.target.value)}
-            />
-          </form>
-        </div>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              handleProcess(textQuestion);
+              document.activeElement.blur();
+            }} className="input-form">
+              <input
+                type="text"
+                placeholder="Ask a question..."
+                value={textQuestion}
+                onChange={(e) => setTextQuestion(e.target.value)}
+              />
+            </form>
+          </div>
 
-        {/* BOTTOM INSTRUCTIONS */}
-        <div className="bottom-info">
-          {isListening ? "🔴 LISTENING..." : "Click to Scan • Hold Spacebar • Type"}
+          <div className="bottom-info-text">
+            {isListening ? "🔴 LISTENING..." : "Click to Scan • Hold Spacebar • Type"}
+          </div>
         </div>
       </div>
     </div>
