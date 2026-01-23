@@ -39,8 +39,6 @@ function Hero() {
                     </main>
 
                 </div>
-
-
             </section>
         </div>
     )

@@ -19,16 +19,16 @@ function NavBar() {
             {/* Navigation Links */}
             <ul className="navbar-menu">
                 <li className="navbar-item">
-                    <Link to="/">Home</Link>
+                    <Link to="/" className="link">Home</Link>
                 </li>
                 <li className="navbar-item">
-                    <Link to="feature">Features</Link>
+                    <Link to="feature" className="link">Features</Link>
                 </li>
                 <li className="navbar-item">
-                  <Link to="about">About</Link>
+                  <Link to="about" className="link">About</Link>
                 </li>
                 <li className="navbar-item">
-                    <Link to="contact">Contact</Link>
+                    <Link to="contact" className="link">Contact</Link>
                 </li>
             </ul>
 

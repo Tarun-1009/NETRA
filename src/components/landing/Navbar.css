@@ -1,4 +1,4 @@
-.navbar{
+.navbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -11,13 +11,13 @@
 }
 
 
-.navbar-logo{
+.navbar-logo {
     font-size: 1.5rem;
     font-weight: bold;
 }
 
 
-.navbar-menu{
+.navbar-menu {
     width: 50%;
     height: 10%;
     display: flex;
@@ -32,17 +32,32 @@
     border-radius: 2rem;
     border: 1px solid #11353c37;
 }
-.navbar-item{
+
+.navbar-item {
     list-style: none;
 }
-.navbar-link{
+
+.link {
+    color: white;
     text-decoration: none;
-    color: #fff;
+    transition: color 0.3s ease;
 }
-.navbar-link:hover{
-    background-color: #1c505b5c;
+
+.link:hover {
+    color: #00d5ff;
 }
-.navbar-btn{
+
+/* Persistent Highlight state (Highlighter) */
+.active-link {
+    color: #5ce1ff;
+    /* Matches the light blue in your screenshot */
+    font-weight: bold;
+    border-bottom: 2px solid #5ce1ff;
+    /* Optional: adds a visual underline indicator */
+}
+
+
+.navbar-btn {
     background-color: #1c515b60;
     color: #fff;
     border: none;
@@ -51,4 +66,3 @@
     border-radius: 2rem;
     cursor: pointer;
 }
-
