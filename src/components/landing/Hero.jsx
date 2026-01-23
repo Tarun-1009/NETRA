@@ -1,46 +1,33 @@
+import React, { Suspense } from 'react';
+import Spline from '@splinetool/react-spline';
 import './Hero.css';
 
 function Hero() {
     return (
-        <div>
-            <section id="home">
-    <div class="container">
-        <main class="hero">
-            
-            <div class="parent">
-                <div class="circle">
-                    <img src='/netra.jpg' className="circle-img" alt="Profile" />
+        <section className="hero-section">
+            <div className="container hero-container">
+                <div className="hero-content">
+                    <h1 className="hero-title">
+                        NETRA:
+                        <span className="gradient-text">Neural Engine for Text & Reality Assistance</span>
+                    </h1>
+                    <p className="hero-description">
+                        Empowering independence with AI-driven visual and text assistance
+                    </p>
+                    <button className="hero-btn">JOIN US NOW</button>
+                </div>
+
+                <div className="hero-spline-container">
+                    <Suspense fallback={<div className="spline-loading">Loading 3D Experience...</div>}>
+                        <div className="hero-spline">
+                            <Spline scene="/reactive_orb.spline" />
+                        </div>
+                    </Suspense>
                 </div>
             </div>
-            
-            
-            <div class="hero-text">
-                <h1><span class="blue-text">NETRA:</span> Neural Engine for Text & Reality Assistance.</h1>
-                <p>Empowering independence with AI-driven visual and text assistance.</p>
-                <button class="btn-start">Start Now</button>
-
-                <div class="features-grid">
-                    <div class="feature-item">
-                        <div class="icon">💰</div>
-                        <p>Intelligent Safety & Assistance</p>
-                    </div>
-                    <div class="feature-item">
-                        <div class="icon">📄</div>
-                        <p>Smart Reader</p>
-                    </div>
-                    <div class="feature-item">
-                        <div class="icon">👁️</div>
-                        <p>Universal Object Recognition</p>
-                    </div>
-                </div>
-            </div>
-        </main>
-
-    </div>
-
-
-            </section>
-        </div>
-    )
+            <div className="bottom-glow"></div>
+        </section>
+    );
 }
-export default Hero
+
+export default Hero;

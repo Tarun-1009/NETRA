@@ -1,42 +1,50 @@
-import React from 'react';
-import { useNavigate, Link } from 'react-router-dom'; // <--- 1. Import the hook
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import './Navbar.css';
 
 function NavBar() {
-    const navigate = useNavigate(); // <--- 2. Initialize the hook
+    const navigate = useNavigate();
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const handleJoinClick = () => {
-        navigate('/vision'); // <--- 3. Use navigate instead of window.location
+        navigate('/vision');
+        setIsMenuOpen(false);
+    };
+
+    const toggleMenu = () => {
+        setIsMenuOpen(!isMenuOpen);
     };
 
     return (
         <nav className="navbar">
-            {/* Logo */}
             <div className="navbar-logo">
                 <span className="logo-text">NETRA</span>
             </div>
 
-            {/* Navigation Links */}
-            <ul className="navbar-menu">
-                <li className="navbar-item">
-                    <Link to="/">Home</Link>
-                </li>
-                <li className="navbar-item">
-                    <Link to="feature">Features</Link>
-                </li>
-                <li className="navbar-item">
-                    <Link to="about">About</Link>
-                </li>
-                <li className="navbar-item">
-                    <Link to="contact">Contact</Link>
-                </li>
-            </ul>
+            <div className={`navbar-toggle ${isMenuOpen ? 'active' : ''}`} onClick={toggleMenu}>
+               
+            </div>
 
-            {/* Button */}
-            {/* 4. Connect the function to the button */}
-            <button className="navbar-btn" onClick={handleJoinClick}>
-                <span>Join Now</span>
-            </button>
+            <div className={`navbar-menu-container ${isMenuOpen ? 'active' : ''}`}>
+                <ul className="navbar-menu">
+                    <li className="navbar-item">
+                        <Link to="/" onClick={() => setIsMenuOpen(false)}>Home</Link>
+                    </li>
+                    <li className="navbar-item">
+                        <Link to="/feature" onClick={() => setIsMenuOpen(false)}>Features</Link>
+                    </li>
+                    <li className="navbar-item">
+                        <Link to="/about" onClick={() => setIsMenuOpen(false)}>About</Link>
+                    </li>
+                    <li className="navbar-item">
+                        <Link to="/contact" onClick={() => setIsMenuOpen(false)}>Contact</Link>
+                    </li>
+                </ul>
+
+                <button className="navbar-btn" onClick={handleJoinClick}>
+                    <span>Join Now</span>
+                </button>
+            </div>
         </nav>
     );
 }

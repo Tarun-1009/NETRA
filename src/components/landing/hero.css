@@ -1,199 +1,230 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Inter', sans-serif;
+:root {
+    --bg-color: #000000;
+    --text-primary: #ffffff;
+    --text-secondary: #a0a0a0;
+    --accent-color: #008f82;
+    --accent-gradient: linear-gradient(135deg, #00f2fe 0%, #008f82 100%);
 }
-.container {
+
+.hero-section {
+    background-color: var(--bg-color);
+    min-height: 100vh;
     width: 100%;
-    max-width: 1200px;
-}
-
-/* Hero Section */
-.hero {
+    position: relative;
+    overflow: hidden;
+    color: var(--text-primary);
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding:30px;
-    
+    justify-content: center;
 }
-/*
-.circle {
-    width: 400px;
-    height: 400px;
-    margin: 20px;
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    border-radius: 50%; /* This makes it a circle */
-    
-    /* Optional: Add a glow to match your theme */
-  /*  box-shadow: 0 0 20px rgba(79, 172, 254, 0.6);
+
+.hero-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 5%;
+    z-index: 0;
+    /* gap: 6rem; */
 }
-*/
-.parent {
+
+.hero-content {
+    flex: 1.1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    z-index: 3;
+    /* padding-right: 2rem; */
+}
+
+.hero-spline-container {
+    flex: 1;
+    height: 600px;
+    min-width: 500px;
+    position: relative;
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 20px;
+    overflow: visible;
 }
 
-.circle {
-    width: 150px;           /* Set the size of the circle */
-    height: 150px;
-    border-radius: 50%;    /* Makes the container a circle */
-    overflow: hidden;     /* Important: Clips the image to the circle shape*/
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    border: 3px solid #4facfe; /* Optional: Adds a blue ring like the NETRA theme */
-    box-shadow: 0 0 20px rgba(79, 172, 254, 0.4); /* Optional: Adds a glow */
-}
-
-.circle-img {
-    width: 100%;           /* Makes image fill the width */
-    height: 100%;          /* Makes image fill the height */
-    object-fit: cover;     /* Important: Keeps the image from stretching */
-}
-.bg-glow-circle {
-    position: absolute;
-    top: 20%;
-    left: 10%;
-    width: 300px;
-    height: 300px;
-    background: rgba(0, 162, 255, 0.15); /* Very faint blue */
-    border-radius: 50%;
-    filter: blur(80px); /* This creates the "ambient light" look */
-    z-index: -1; /* Puts it behind your text and image */
-}
-
-
-
-.hero-text {
-    width:100%;
-    height:100%;
-    padding-top: 100px;
-    padding-left: 100px;
-}
-
-.hero-text h1 {
-    font-size: 3rem;
+.hero-title {
+    font-size: clamp(2.2rem, 4.5vw, 4rem);
+    font-weight: 500;
     line-height: 1.1;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
+    letter-spacing: -0.02em;
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+
 }
 
-.blue-text {
-    color: #4facfe;
+.gradient-text {
+    background: white;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
 }
 
-.hero-text p {
-    color: #a0a0a0;
-    margin-bottom: 60px;
+.hero-description {
     font-size: 1.1rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 40px;
+    max-width: 500px;
 }
 
-/* Button */
-.btn-start {
-    background: linear-gradient(90deg, #00c6ff, #0072ff);
-    border: none;
-    padding: 12px 35px;
-    color: white;
-    border-radius: 25px;
-    font-weight: bold;
+.hero-btn {
+    background: rgba(0, 143, 130, 0.1);
+    border: 1px solid var(--accent-color);
+    color: var(--text-primary);
+    padding: 16px 42px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    letter-spacing: 0.05em;
     cursor: pointer;
-    box-shadow: 0 4px 15px rgba(0, 198, 255, 0.4);
-    transition: transform 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    width: fit-content;
+    text-transform: uppercase;
+    backdrop-filter: blur(10px);
 }
 
-.btn-start:hover {
-    transform: scale(1.05);
+.hero-btn:hover {
+    background: var(--accent-color);
+    box-shadow: 0 0 40px rgba(0, 143, 130, 0.4);
+    transform: translateY(-2px);
 }
 
-/* Features */
-.features-grid {
-  display: flex;
-  gap: 40px; /* Space between the three columns */
-  justify-content: center; /* Centers the whole group on the page */
-  margin-top: 50px;
-}
-
-.feature-item {
-  display: flex;
-  flex-direction: column; /* Stacks icon on top of text */
-  align-items: center;    /* Centers children horizontally */
-  text-align: center;     /* Centers the text lines themselves */
-  max-width: 200px;       /* Limits width so text wraps like your image */
-}
-
-.icon {
-  font-size: 2rem;        /* Adjust size of the emoji/icon */
-  margin-bottom: 15px;    /* Space between icon and text */
-}
-
-.feature-item p {
-  color: #a0a0a0;         /* Grayish color from your screenshot */
-  font-size: 1.1rem;
-  line-height: 1.3;
-}
-
-/*
-.features-grid {
+.hero-spline {
+    position: absolute;
+    width: 200%;
+    height: 140%;
+    top: 40%;
+    left: 0;
+    transform: translate(-50%, -50%);
     display: flex;
-    gap: 30px;
-    margin-top: 50px;
+    justify-content: center;
     align-items: center;
+    pointer-events: auto;
+   
 }
 
-.feature-item {
-    text-align: left;
-    font-size: 0.85rem;
-    color: #e0e0e0;
-    align-items: center;
-    justify-content:center;
+/* Ensure the Spline component children (wrapper and canvas) take full size */
+.hero-spline>div {
+    width: 100% !important;
+    height: 100% !important;
 }
 
-.icon {
-    font-size: 1.5rem;
-    margin-bottom: 10px;
-    opacity: 0.8;
-}
-*/
-/* Footer */
-footer {
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    padding-top: 30px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.hero-spline canvas {
+    width: 100% !important;
+    height: 100% !important;
 }
 
-.logo {
-    font-weight: bold;
-    letter-spacing: 2px;
+.spline-loading {
+    position: absolute;
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    color: var(--accent-color);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    animation: pulse 2s infinite ease-in-out;
 }
 
-.logo span {
-    color: #4facfe;
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 0.5;
+    }
+
+    50% {
+        opacity: 1;
+    }
 }
 
-.stats {
-    font-size: 1.5rem;
-    font-weight: bold;
+.bottom-glow {
+    position: absolute;
+    bottom: -100px;
+    left: 0;
+    width: 100%;
+    height: 300px;
+    background: radial-gradient(circle at center, rgba(0, 143, 130, 0.2) 0%, transparent 70%);
+    filter: blur(80px);
+    z-index: 1;
+    pointer-events: none;
 }
 
-.stats small {
-    display: block;
-    font-size: 0.7rem;
-    color: #777;
-    font-weight: normal;
+@media (max-width: 1024px) {
+    .hero-container {
+        flex-direction: column;
+        text-align: center;
+        padding-top: 100px;
+        gap: 0;
+    }
+
+    .hero-spline-container {
+        width: 10%;
+        height: 400px;
+        min-width: unset;
+        order: 1;
+    }
+
+    .hero-content {
+        align-items: center;
+        width: 100%;
+        padding: 0 1rem 50px;
+        order: 2;
+    }
+
+    .hero-description {
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .hero-spline {
+        width: 100%;
+        height: 130%;
+    }
 }
 
-.footer-nav a {
-    color: #777;
-    text-decoration: none;
-    margin-left: 20px;
-    font-size: 0.9rem;
-    transition: color 0.3s;
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2.2rem;
+    }
+
+    .hero-spline-container {
+        height: 350px;
+    }
+
+    .hero-spline {
+        width: 150%;
+        height: 150%;
+    }
 }
 
-.footer-nav a.active, .footer-nav a:hover {
-    color: white;
+@media (max-width: 480px) {
+    .hero-container {
+        padding-top: 60px;
+    }
+
+    .hero-spline-container {
+        height: 250px;
+    }
+
+    .hero-spline {
+        width: 180%;
+        height: 180%;
+    }
+
+    .hero-title {
+        font-size: 1.8rem;
+    }
 }
